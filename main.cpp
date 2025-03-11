@@ -1,6 +1,10 @@
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
+#include <vector>
+#include <string>
+#include <iostream>
+using namespace std;
 
 #define MAX_DISK_NUM (10 + 1)
 #define MAX_DISK_SIZE (16384 + 1)
@@ -10,27 +14,196 @@
 #define FRE_PER_SLICING (1800)
 #define EXTRA_TIME (105)
 
-typedef struct Request_ {
+typedef struct Request_
+{
     int object_id;
     int prev_id;
     bool is_done;
 } Request;
 
-typedef struct Object_ {
-    int replica[REP_NUM + 1];
-    int* unit[REP_NUM + 1];
+typedef struct Object_
+{
+    int replica[REP_NUM + 1]; // 第几个副本存放于哪个盘
+    int *unit[REP_NUM + 1];   // 数组，存放对象的某个副本具体存放的子单元在硬盘中的地址
     int size;
-    int last_request_point;
+    int last_request_point; // 最后一次请求任务
     bool is_delete;
 } Object;
 
 Request request[MAX_REQUEST_NUM];
 Object object[MAX_OBJECT_NUM];
 
-int T, M, N, V, G;
-int disk[MAX_DISK_NUM][MAX_DISK_SIZE];
-int disk_point[MAX_DISK_NUM];
+int T, M, N, V, G;                     // 时间片T 标签M 硬盘N 存储单元数V 磁头tokenG
+int disk[MAX_DISK_NUM][MAX_DISK_SIZE]; // 磁盘内容
+int disk_point[MAX_DISK_NUM];          // 磁头位置
+enum DiskOp
+{
+    PASS,
+    JUMP,
+    READ,
+};
+class Disk
+{
+    int head = 1;    // 初始为1
+    int head_s = -1; // 磁头上个操作 -1初始化 0刚jump过 >0
+    // 64刚read过 52=ceil(64*0.8) ... 16 上次连续read过
+    // 1 pass过
+    int size;
+    int blocks[MAX_DISK_SIZE]; // 考虑这里就存 obj_id吗，需不需要其他信息？
+    int token;                 // 当前时间片总可用token数
+    int elapsed = 0;           // 当前时间片已用token数
+    int phase_end=false;
+private:
+    // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
+    // 返回操作是否进行了操作
+    bool operate(DiskOp op, int param)
+    {
+        switch (op)
+        {
+        case JUMP:
+            if (elapsed > 0){
+                phase_end=true;
+                return false;
+            }
+            printf("j %d\n", param);
+            head = param;
+            head_s = 0;
+            elapsed = token;
+            phase_end=true;
+            break;
+        case PASS:
+        //TODO 如果给的距离超过了当前时间能移动的上限，会尽量移动（这样算优化吗？）
+            if (param >= 1)
+            {
+                if (elapsed + param > token){
+                    // operate(PASS,token-elapsed)//直接移动最大距离？
+                    phase_end=true;
+                    return false; // 或者调用end？
+                }
+                string s = string(param, 'p');
+                printf("%s", s.c_str()); // 使用 c_str() 将 std::string 转换为 const char*
+                head += param;
+                head = (head - 1) % size + 1;
+                head_s = 1;
+                elapsed += param > 2 ? param : 1;
+            }//pass 0等于不做动作
+            break;
+        case READ:
+            int consume_token = 64;
+            if (head_s > 16)
+                consume_token = head_s;
+                
+            if (elapsed + consume_token > token)
+            {
+                phase_end=true;
+                return false;
+            }
+            else
+            {
+                elapsed += consume_token;
+                head_s = consume_token;
+                printf("r");
+            }
+            break;
+        default:
+            break;
+        }
+        return true;
+    }
+    void op_end()
+    {
+        printf("#\n");
+        phase_end = false;
+    }
 
+public:
+    void init()
+    {
+        head = 1;
+        token = G;
+        size = V;
+    }
+    void delete_obj(int *units, int size)
+    {
+        for (int i = 1; i <= size; i++)
+        {
+            blocks[units[i]] = 0;
+        }
+    }
+    void write_obj(int object_id, int *obj_units, int size)
+    {
+        int current_write_point = 0;
+        for (int i = 1; i <= V; i++)
+        {
+            if (blocks[i] == 0)
+            {
+                blocks[i] = object_id;
+                obj_units[++current_write_point] = i;
+                if (current_write_point == size)
+                {
+                    break;
+                }
+            }
+        }
+        assert(current_write_point == size);
+    }
+
+    // TODO 传入需要读取的 磁盘的块 的索引
+    // 返回 已读取的块 的索引
+    vector<int> task(vector<int> target)
+    {
+        // TODO 调用最优化使用磁头token的算法
+        // 第一次出现的目标大于(令牌-64)就进行jump 否则pass至目标 进行读取、
+        int next; // 使用to_finds[next]可用得到下一个目标的磁盘地址
+        int tokens = G;
+        vector<int> found;
+        for (int i = 1; i < target.size(); i++)
+        {
+            if (target[i] >= head)
+            {
+                next = i;
+                break;
+            }
+        }
+        // to_finds[next]是磁头后 最近的目标块
+        // 距离 target[next]-head)
+        if (target[next] - head + 64 > token)
+        {
+            // 过远的情况
+            operate(JUMP, target[next]);
+            op_end();
+        }
+        else
+        {
+            while(elapsed+(target[next]-head)<token){
+                int read_consume;
+                if(operate(PASS, target[next] - head)){
+                    read_consume = 64;
+                }else{
+                    read_consume = (head_s>=16)?head_s:64;
+                }
+                int read_consume = (head_s>=16)?head_s:64;
+
+            }
+            operate(PASS, target[next] - head);
+            operate(READ, 0);
+            found.push_back(head);
+            if (next+1<=target.size())
+                next++;
+                // 尝试连续读取
+                while (!phase_end)
+                {
+
+                }
+        }
+        return;
+    }
+};
+
+// TODO 任务调度器 读取当前任务列表，计算出待查找块，调用disk.task 具体操作磁头读取
+// 收集返回结果  统计已完成任务，最终统一上报
+
+Disk disks[MAX_DISK_NUM];
 void timestamp_action()
 {
     int timestamp;
@@ -40,12 +213,12 @@ void timestamp_action()
     fflush(stdout);
 }
 
-void do_object_delete(const int* object_unit, int* disk_unit, int size)
-{
-    for (int i = 1; i <= size; i++) {
-        disk_unit[object_unit[i]] = 0;
-    }
-}
+// void do_object_delete(const int* object_unit, int* disk_unit, int size)
+// {
+//     for (int i = 1; i <= size; i++) {
+//         disk_unit[object_unit[i]] = 0;
+//     }
+// }
 
 void delete_action()
 {
@@ -54,15 +227,20 @@ void delete_action()
     static int _id[MAX_OBJECT_NUM];
 
     scanf("%d", &n_delete);
-    for (int i = 1; i <= n_delete; i++) {
+    for (int i = 1; i <= n_delete; i++)
+    {
         scanf("%d", &_id[i]);
     }
 
-    for (int i = 1; i <= n_delete; i++) {
+    // 删除时 链式取消request
+    for (int i = 1; i <= n_delete; i++)
+    {
         int id = _id[i];
         int current_id = object[id].last_request_point;
-        while (current_id != 0) {
-            if (request[current_id].is_done == false) {
+        while (current_id != 0)
+        {
+            if (request[current_id].is_done == false)
+            {
                 abort_num++;
             }
             current_id = request[current_id].prev_id;
@@ -70,17 +248,24 @@ void delete_action()
     }
 
     printf("%d\n", abort_num);
-    for (int i = 1; i <= n_delete; i++) {
+    // 具体abort 了哪些编号的request
+    for (int i = 1; i <= n_delete; i++)
+    {
         int id = _id[i];
         int current_id = object[id].last_request_point;
-        while (current_id != 0) {
-            if (request[current_id].is_done == false) {
+        while (current_id != 0)
+        {
+            if (request[current_id].is_done == false)
+            {
                 printf("%d\n", current_id);
             }
             current_id = request[current_id].prev_id;
         }
-        for (int j = 1; j <= REP_NUM; j++) {
-            do_object_delete(object[id].unit[j], disk[object[id].replica[j]], object[id].size);
+        // 删除所有副本
+        for (int j = 1; j <= REP_NUM; j++)
+        {
+            disks[object[id].replica[j]].delete_obj(object[id].unit[j], object[id].size);
+            // do_object_delete(object[id].unit[j], disk[object[id].replica[j]], object[id].size);
         }
         object[id].is_delete = true;
     }
@@ -88,42 +273,47 @@ void delete_action()
     fflush(stdout);
 }
 
-void do_object_write(int* object_unit, int* disk_unit, int size, int object_id)
-{
-    int current_write_point = 0;
-    for (int i = 1; i <= V; i++) {
-        if (disk_unit[i] == 0) {
-            disk_unit[i] = object_id;
-            object_unit[++current_write_point] = i;
-            if (current_write_point == size) {
-                break;
-            }
-        }
-    }
+// void do_object_write(int* object_unit, int* disk_unit, int size, int object_id)
+// {
+//     int current_write_point = 0;
+//     for (int i = 1; i <= V; i++) {
+//         if (disk_unit[i] == 0) {
+//             disk_unit[i] = object_id;
+//             object_unit[++current_write_point] = i;
+//             if (current_write_point == size) {
+//                 break;
+//             }
+//         }
+//     }
 
-    assert(current_write_point == size);
-}
+//     assert(current_write_point == size);
+// }
 
 void write_action()
 {
     int n_write;
     scanf("%d", &n_write);
-    for (int i = 1; i <= n_write; i++) {
+    for (int i = 1; i <= n_write; i++)
+    {
         int id, size;
         scanf("%d%d%*d", &id, &size);
         object[id].last_request_point = 0;
-        for (int j = 1; j <= REP_NUM; j++) {
+        for (int j = 1; j <= REP_NUM; j++)
+        {
             object[id].replica[j] = (id + j) % N + 1;
-            object[id].unit[j] = static_cast<int*>(malloc(sizeof(int) * (size + 1)));
+            object[id].unit[j] = static_cast<int *>(malloc(sizeof(int) * (size + 1)));
             object[id].size = size;
             object[id].is_delete = false;
-            do_object_write(object[id].unit[j], disk[object[id].replica[j]], size, id);
+            disks[(id + j) % N + 1].write_obj(id, object[id].unit[j], size);
+            // do_object_write(object[id].unit[j], disk[object[id].replica[j]], size, id);
         }
 
         printf("%d\n", id);
-        for (int j = 1; j <= REP_NUM; j++) {
+        for (int j = 1; j <= REP_NUM; j++)
+        {
             printf("%d", object[id].replica[j]);
-            for (int k = 1; k <= size; k++) {
+            for (int k = 1; k <= size; k++)
+            {
                 printf(" %d", object[id].unit[j][k]);
             }
             printf("\n");
@@ -138,7 +328,8 @@ void read_action()
     int n_read;
     int request_id, object_id;
     scanf("%d", &n_read);
-    for (int i = 1; i <= n_read; i++) {
+    for (int i = 1; i <= n_read; i++)
+    {
         scanf("%d%d", &request_id, &object_id);
         request[request_id].object_id = object_id;
         request[request_id].prev_id = object[object_id].last_request_point;
@@ -148,39 +339,57 @@ void read_action()
 
     static int current_request = 0;
     static int current_phase = 0;
-    if (!current_request && n_read > 0) {
+    if (!current_request && n_read > 0)
+    {
         current_request = request_id;
     }
-    if (!current_request) {
-        for (int i = 1; i <= N; i++) {
+    if (!current_request)
+    {
+        for (int i = 1; i <= N; i++)
+        {
             printf("#\n");
         }
         printf("0\n");
-    } else {
+    }
+    else
+    {
         current_phase++;
         object_id = request[current_request].object_id;
-        for (int i = 1; i <= N; i++) {
-            if (i == object[object_id].replica[1]) {
-                if (current_phase % 2 == 1) {
+        for (int i = 1; i <= N; i++)
+        {
+            if (i == object[object_id].replica[1])
+            {
+                if (current_phase % 2 == 1)
+                {
                     printf("j %d\n", object[object_id].unit[1][current_phase / 2 + 1]);
-                } else {
+                }
+                else
+                {
                     printf("r#\n");
                 }
-            } else {
+            }
+            else
+            {
                 printf("#\n");
             }
         }
 
-        if (current_phase == object[object_id].size * 2) {
-            if (object[object_id].is_delete) {
+        if (current_phase == object[object_id].size * 2)
+        {
+            if (object[object_id].is_delete)
+            {
                 printf("0\n");
-            } else {
+            }
+            else
+            {
                 printf("1\n%d\n", current_request);
                 request[current_request].is_done = true;
             }
             current_request = 0;
             current_phase = 0;
-        } else {
+        }
+        else
+        {
             printf("0\n");
         }
     }
@@ -190,8 +399,10 @@ void read_action()
 
 void clean()
 {
-    for (auto& obj : object) {
-        for (int i = 1; i <= REP_NUM; i++) {
+    for (auto &obj : object)
+    {
+        for (int i = 1; i <= REP_NUM; i++)
+        {
             if (obj.unit[i] == nullptr)
                 continue;
             free(obj.unit[i]);
@@ -202,22 +413,33 @@ void clean()
 
 int main()
 {
+
     scanf("%d%d%d%d%d", &T, &M, &N, &V, &G);
-
-    for (int i = 1; i <= M; i++) {
-        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++) {
+    // TODO init 磁盘 各种信息 token 空闲链表等等等
+    for (Disk D : disks)
+    {
+        D.init();
+    }
+    for (int i = 1; i <= M; i++)
+    {
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
+        {
             scanf("%*d");
         }
     }
 
-    for (int i = 1; i <= M; i++) {
-        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++) {
+    for (int i = 1; i <= M; i++)
+    {
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
+        {
             scanf("%*d");
         }
     }
 
-    for (int i = 1; i <= M; i++) {
-        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++) {
+    for (int i = 1; i <= M; i++)
+    {
+        for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
+        {
             scanf("%*d");
         }
     }
@@ -225,11 +447,12 @@ int main()
     printf("OK\n");
     fflush(stdout);
 
-    for (int i = 1; i <= N; i++) {
-        disk_point[i] = 1;
-    }
+    // for (int i = 1; i <= N; i++) {
+    //     disk_point[i] = 1;
+    // }
 
-    for (int t = 1; t <= T + EXTRA_TIME; t++) {
+    for (int t = 1; t <= T + EXTRA_TIME; t++)
+    {
         timestamp_action();
         delete_action();
         write_action();
