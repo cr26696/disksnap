@@ -8,3 +8,4 @@ ZERO_CHECK.vcxproj.filters
 .vs/slnx.sqlite
 main.exe
 cmake_install.cmake
+build

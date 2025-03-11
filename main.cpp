@@ -1,9 +1,12 @@
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
+
 #include <vector>
 #include <string>
-#include <iostream>
+#include <algorithm>
+#include <unordered_set>
+
 using namespace std;
 
 #define MAX_DISK_NUM (10 + 1)
@@ -23,7 +26,7 @@ typedef struct Request_
 
 typedef struct Object_
 {
-    int replica[REP_NUM + 1]; // 第几个副本存放于哪个盘
+    int replica[REP_NUM + 1]; // 第几个副本存放于哪个盘 注意这里索引 起止 1 2 3
     int *unit[REP_NUM + 1];   // 数组，存放对象的某个副本具体存放的子单元在硬盘中的地址
     int size;
     int last_request_point; // 最后一次请求任务
@@ -52,7 +55,8 @@ class Disk
     int blocks[MAX_DISK_SIZE]; // 考虑这里就存 obj_id吗，需不需要其他信息？
     int token;                 // 当前时间片总可用token数
     int elapsed = 0;           // 当前时间片已用token数
-    int phase_end=false;
+    int phase_end = false;
+
 private:
     // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
     // 返回操作是否进行了操作
@@ -61,23 +65,25 @@ private:
         switch (op)
         {
         case JUMP:
-            if (elapsed > 0){
-                phase_end=true;
+            if (elapsed > 0)
+            {
+                phase_end = true;
                 return false;
             }
             printf("j %d\n", param);
             head = param;
             head_s = 0;
             elapsed = token;
-            phase_end=true;
+            phase_end = true;
             break;
         case PASS:
-        //TODO 如果给的距离超过了当前时间能移动的上限，会尽量移动（这样算优化吗？）
+            // 如果给的距离超过了当前时间能移动的上限，会尽量移动（这样算优化吗？）
             if (param >= 1)
             {
-                if (elapsed + param > token){
+                if (elapsed + param > token)
+                {
                     // operate(PASS,token-elapsed)//直接移动最大距离？
-                    phase_end=true;
+                    phase_end = true;
                     return false; // 或者调用end？
                 }
                 string s = string(param, 'p');
@@ -86,16 +92,16 @@ private:
                 head = (head - 1) % size + 1;
                 head_s = 1;
                 elapsed += param > 2 ? param : 1;
-            }//pass 0等于不做动作
+            } // pass 0等于不做动作
             break;
         case READ:
             int consume_token = 64;
             if (head_s > 16)
                 consume_token = head_s;
-                
+
             if (elapsed + consume_token > token)
             {
-                phase_end=true;
+                phase_end = true;
                 return false;
             }
             else
@@ -148,7 +154,7 @@ public:
         assert(current_write_point == size);
     }
 
-    // TODO 传入需要读取的 磁盘的块 的索引
+    // 传入需要读取的 磁盘的块 的索引
     // 返回 已读取的块 的索引
     vector<int> task(vector<int> target)
     {
@@ -171,38 +177,74 @@ public:
         {
             // 过远的情况
             operate(JUMP, target[next]);
-            op_end();
         }
         else
         {
-            while(elapsed+(target[next]-head)<token){
+            while (elapsed + (target[next] - head) < token) // elapsed+距离 < token上限
+            {
                 int read_consume;
-                if(operate(PASS, target[next] - head)){
-                    read_consume = 64;
-                }else{
-                    read_consume = (head_s>=16)?head_s:64;
-                }
-                int read_consume = (head_s>=16)?head_s:64;
-
-            }
-            operate(PASS, target[next] - head);
-            operate(READ, 0);
-            found.push_back(head);
-            if (next+1<=target.size())
-                next++;
-                // 尝试连续读取
-                while (!phase_end)
+                if (operate(PASS, target[next] - head)) // token足够移动
                 {
-
+                    if (operate(READ, 0)) // token足够读取
+                    {
+                        found.push_back(target[next]); // 放入找到的块
+                        if (next + 1 == target.size()) // 尝试找下一个
+                            break;
+                        next++; // 还有其他要找的情况
+                        continue;
+                    }
+                    else
+                        break;
                 }
+                else
+                    break;
+            }
         }
-        return;
+        op_end();
+        return found;
     }
 };
 
 // TODO 任务调度器 读取当前任务列表，计算出待查找块，调用disk.task 具体操作磁头读取
 // 收集返回结果  统计已完成任务，最终统一上报
-
+class Scheduler
+{
+public:
+    unordered_set<int> active_requests;
+private:
+public:
+    // 成功失败
+    bool add_request(int req_id)
+    {
+        active_requests.insert(req_id);
+    }
+    bool del_request(int req_id){
+        active_requests.erase(req_id);
+    }
+    vector<int> get_task_for_disk(int disk_id)
+    {
+        // TODO 获取一个对应块的数组
+        vector<int> target;
+        for (int req_id : active_requests)
+        {
+            Request req = request[req_id];
+            Object obj = object[req.object_id];
+            for (int i=1;i<=3;i++)
+            {
+                if (obj.replica[i] == disk_id)
+                {
+                    int* units = obj.unit[i];
+                    for(int i=1;i<=5;i++){
+                        target.push_back(units[i]);
+                    }
+                    break;
+                }
+            }
+        }
+        sort(target.begin(),target.end());
+        return target;
+    }
+};
 Disk disks[MAX_DISK_NUM];
 void timestamp_action()
 {
@@ -420,6 +462,7 @@ int main()
     {
         D.init();
     }
+    Scheduler scheduler;
     for (int i = 1; i <= M; i++)
     {
         for (int j = 1; j <= (T - 1) / FRE_PER_SLICING + 1; j++)
