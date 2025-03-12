@@ -5,7 +5,8 @@ CMakeCache.txt
 code_craft.vcxproj.filters
 CodeCraft.sln
 ZERO_CHECK.vcxproj.filters
-.vs/slnx.sqlite
+.vs
 main.exe
 cmake_install.cmake
 build
+.vscode/*
