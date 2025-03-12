@@ -1,12 +1,7 @@
-CMakeFiles
-*.vcxproj
-ALL_BUILD.vcxproj.filters
-CMakeCache.txt
-code_craft.vcxproj.filters
-CodeCraft.sln
-ZERO_CHECK.vcxproj.filters
-.vs
-main.exe
-cmake_install.cmake
 build
+*.exe
+.vs
 .vscode/*
+
+disksnap.zip
+compile.bat
