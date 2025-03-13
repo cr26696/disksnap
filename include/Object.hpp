@@ -3,6 +3,7 @@
 #define OBJECT_HPP
 
 #include <vector>
+#include "MetaDefine.hpp"
 
 struct Object
 {

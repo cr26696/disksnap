@@ -1,14 +1,11 @@
 // Disk.cpp
 #include "Disk.hpp"
-
+using namespace std;
 // 构造函数
-Disk::Disk()
-    : head(0), head_s(-1), size(0), token(0), elapsed(0), phase_end(false)
+Disk::Disk(int V, int G)
+    : head(0), head_s(-1), sizeV(V), tokenG(G), elapsed(0), phase_end(false), blocks(V, 0)
 {
-    for (int i = 0; i < MAX_DISK_SIZE; ++i)
-    {
-        blocks[i] = 0;
-    }
+
 }
 
 bool Disk::operate(DiskOp op, int param)
@@ -25,15 +22,15 @@ bool Disk::operate(DiskOp op, int param)
             return false;
         }
         printf("j %d\n", param + 1);
-        head = param % V;
+        head = param % sizeV;
         head_s = 0;
-        elapsed = token + 1;
+        elapsed = tokenG + 1;
         phase_end = true;
         break;
     case PASS:
         if (param >= 1)
         {
-            if (elapsed + param > token)
+            if (elapsed + param > tokenG)
             {
                 phase_end = true;
                 return false;
@@ -41,7 +38,7 @@ bool Disk::operate(DiskOp op, int param)
             std::string s(param, 'p');
             printf("%s", s.c_str()); // 使用 c_str() 将 std::string 转换为 const char*
             head += param;
-            head = head % size;
+            head = head % sizeV;
             head_s = 1;
             elapsed += param;
             return true;
@@ -54,7 +51,7 @@ bool Disk::operate(DiskOp op, int param)
         consume_token = 64;
         if (head_s > 16)
             consume_token = head_s;
-        if (elapsed + consume_token >= token)
+        if (elapsed + consume_token >= tokenG)
         {
             phase_end = true;
             return false;
@@ -75,7 +72,7 @@ bool Disk::operate(DiskOp op, int param)
 
 void Disk::op_end()
 {
-    if (elapsed == token + 1)
+    if (elapsed == tokenG + 1)
     {
         elapsed = 0;
         phase_end = false;
@@ -86,12 +83,12 @@ void Disk::op_end()
     phase_end = false;
 }
 
-void Disk::init()
-{
-    head = 0;
-    token = G;
-    size = V;
-}
+// void Disk::init(int G, int V)
+// {
+//     head = 0;
+//     token = G;
+//     size = V;
+// }
 
 void Disk::delete_obj(int *units, int size)
 {
@@ -105,7 +102,7 @@ void Disk::delete_obj(int *units, int size)
 void Disk::write_obj(int object_id, int *obj_units, int size)
 {
     int current_write_point = 0;
-    for (int i = 1; i <= V; i++)
+    for (int i = 1; i <= size; i++)
     {
         if (blocks[i] == 0)
         {
@@ -148,8 +145,9 @@ void Disk::task(std::vector<int> input_target, int disk_id)
     }
 
     int idx = 0;
-    int tokens = G;
+    int tokens = tokenG;
     int distance = (target[0] - 1) - head;
+    vector<int> found;
     if (distance < 0)
         distance += 8000;
     DEBUG_PRINT(distance);
@@ -180,16 +178,18 @@ void Disk::task(std::vector<int> input_target, int disk_id)
         }
     }
     op_end();
+    vector<Request>& requests = RequestManager::getInstance()->getRequests();
+    vector<Object>& objects = ObjectManager::getInstance()->getObjects();
     for (int i : found)
     {
         int complete_id = 0;
         for (int j = 1; j <= 3; j++)
         {
-            if (disk_id == object[blocks[i]].replica[j])
+            if (disk_id == objects[blocks[i]].replica[j])
             {
-                for (int k = 1; k <= object[blocks[i]].size; k++)
+                for (int k = 1; k <= objects[blocks[i]].size; k++)
                 {
-                    if (object[blocks[i]].unit[j][k] == i)
+                    if (objects[blocks[i]].unit[j][k] == i)
                     {
                         complete_id = k;
                         break;
@@ -198,6 +198,16 @@ void Disk::task(std::vector<int> input_target, int disk_id)
             }
             continue;
         }
-        request[object[blocks[i]].last_request_point].complete[complete_id] = 1;
+        requests[objects[blocks[i]].last_request_point].complete[complete_id] = 1;
     }
+}
+
+bool Disk::hasSpace(int size) {
+    // 检查磁盘是否有足够的空间
+    return true; // 伪代码实现
+}
+
+void Disk::store(int id, int tag, int size) {
+    // 存储对象的逻辑
+    // 伪代码实现
 }

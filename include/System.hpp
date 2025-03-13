@@ -3,8 +3,20 @@
 #define SYSTEM_HPP
 
 #include "DiskManager.hpp"
-#include "Replica.hpp" // 新增
 #include <vector>
+#include <cstdio>
+#include <cassert>
+#include <cstdlib>
+#include <string>
+#include <algorithm>
+#include <unordered_set>
+#include <iostream>
+#include <math.h>
+#include "MetaDefine.hpp"
+#include "Replica.hpp" // 新增
+#include "RequestManager.hpp"
+#include "ObjectManager.hpp"
+#include "Scheduler.hpp"
 
 class System
 {

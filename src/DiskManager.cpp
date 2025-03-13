@@ -1,30 +1,21 @@
 // DiskManager.cpp
 #include "DiskManager.hpp"
-#include <cstdio>
-#include <cassert>
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <unordered_set>
-#include <iostream>
-#include <math.h>
-#include "MetaDefine.hpp"
 
 using namespace std;
 
 DiskManager::DiskManager(int T, int M, int N, int V, int G)
     : T(T), M(M), N(N), V(V), G(G)
 {
-    for (auto &D : disks)
-    {
-        D.init();
-    }
+    // for (auto &D : disks)
+    // {
+    //     D.init();
+    // }
 }
 
 void DiskManager::clean()
 {
-    for (auto &obj : object)
+    vector<Object>& objects = ObjectManager::getInstance()->getObjects();
+    for (auto &obj : objects)
     {
         for (int i = 1; i <= REP_NUM; i++)
         {

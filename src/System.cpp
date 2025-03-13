@@ -1,16 +1,5 @@
 // System.cpp
-#include <cstdio>
-#include <cassert>
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <unordered_set>
-#include <iostream>
-#include <math.h>
 #include "System.hpp"
-#include "MetaDefine.hpp"
-#include "Replica.hpp" // 新增
 
 using namespace std;
 
@@ -82,7 +71,8 @@ void System::delete_action()
     int n_delete;
     int abort_num = 0;
     static int _id[MAX_OBJECT_NUM];
-
+    vector<Request>& requests = RequestManager::getInstance()->getRequests();
+    vector<Object>& objects = ObjectManager::getInstance()->getObjects();
     scanf("%d", &n_delete);
     for (int i = 1; i <= n_delete; i++)
     {
@@ -92,16 +82,16 @@ void System::delete_action()
     for (int i = 1; i <= n_delete; i++)
     {
         int id = _id[i];
-        int current_id = object[id].last_request_point;
+        int current_id = objects[id].last_request_point;
 
         while (current_id != 0)
         {
-            if (request[current_id].is_done == false)
+            if (requests[current_id].is_done == false)
             {
-                scheduler.del_request(current_id);
+                Scheduler::getInstance()->del_request(current_id);
                 abort_num++;
             }
-            current_id = request[current_id].prev_id;
+            current_id = requests[current_id].prev_id;
         }
     }
 
@@ -109,20 +99,20 @@ void System::delete_action()
     for (int i = 1; i <= n_delete; i++)
     {
         int id = _id[i];
-        int current_id = object[id].last_request_point;
+        int current_id = objects[id].last_request_point;
         while (current_id != 0)
         {
-            if (request[current_id].is_done == false)
+            if (requests[current_id].is_done == false)
             {
                 printf("%d\n", current_id);
             }
-            current_id = request[current_id].prev_id;
+            current_id = requests[current_id].prev_id;
         }
         for (int j = 1; j <= REP_NUM; j++)
         {
-            diskManager.store(object[id].replica[j], object[id].unit[j], object[id].size);
+            diskManager.store(objects[id].replica[j], *objects[id].unit[j], objects[id].size);
         }
-        object[id].is_delete = true;
+        objects[id].is_delete = true;
     }
 
     fflush(stdout);
@@ -132,22 +122,24 @@ void System::read_action()
 {
     int n_read;
     int request_id, object_id;
+    vector<Request>& requests = RequestManager::getInstance()->getRequests();
+    vector<Object>& objects = ObjectManager::getInstance()->getObjects();
     scanf("%d", &n_read);
     for (int i = 1; i <= n_read; i++)
     {
         scanf("%d%d", &request_id, &object_id);
-        request[request_id].object_id = object_id;
-        request[request_id].prev_id = object[object_id].last_request_point;
-        object[object_id].last_request_point = request_id;
-        request[request_id].is_done = false;
-        scheduler.add_request(request_id);
+        requests[request_id].object_id = object_id;
+        requests[request_id].prev_id = objects[object_id].last_request_point;
+        objects[object_id].last_request_point = request_id;
+        requests[request_id].is_done = false;
+        // Scheduler::getInstance()->del_request(current_id);
     }
 
     for (int i = 1; i <= DiskNum; i++)
     {
-        disks[i].task(scheduler.get_task_for_disk(i), i);
+        disks[i].task(Scheduler::getInstance()->get_task_for_disk(i), i);
     }
-    scheduler.req_upload();
+    Scheduler::getInstance()->req_upload();
 
     fflush(stdout);
 }
