@@ -5,10 +5,13 @@ using namespace std;
 
 // 初始化静态实例指针为 nullptr
 System* System::instance = nullptr;
+RequestManager* requestManager = RequestManager::getInstance();
+ObjectManager* objectManager = ObjectManager::getInstance();
+Scheduler* scheduler = Scheduler::getInstance();
 
 // 私有构造函数
 System::System(int T, int M, int N, int V, int G)
-    : TimeStampNum(T), Tags(M), DiskNum(N), DiskVolume(V), Token(G), diskManager(T, M, N, V, G)
+    : TimeStampNum(T), Tags(M), DiskNum(N), DiskVolume(V), Token(G), diskManager(*DiskManager::getInstance())
 {
 }
 
@@ -134,7 +137,7 @@ void System::read_action()
         requests[request_id].is_done = false;
         // Scheduler::getInstance()->del_request(current_id);
     }
-
+    vector<Disk>& disks = DiskManager::getInstance()->getDisks();
     for (int i = 1; i <= DiskNum; i++)
     {
         disks[i].task(Scheduler::getInstance()->get_task_for_disk(i), i);

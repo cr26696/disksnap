@@ -3,13 +3,16 @@
 
 using namespace std;
 
-DiskManager::DiskManager(int T, int M, int N, int V, int G)
-    : T(T), M(M), N(N), V(V), G(G)
-{
-    // for (auto &D : disks)
-    // {
-    //     D.init();
-    // }
+DiskManager* DiskManager::instance = nullptr;
+DiskManager* DiskManager:: getInstance() {
+    if (instance == nullptr) {
+        DiskManager::instance = new DiskManager(); // 懒加载创建实例
+    }
+    return DiskManager::instance;
+}
+
+std::vector<Disk>& DiskManager:: getDisks(){
+    return DiskManager::disks;
 }
 
 void DiskManager::clean()

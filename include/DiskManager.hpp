@@ -38,12 +38,15 @@ class DiskManager {
 private:
     int T, M, N, V, G;
     std::vector<Disk> disks;
-    std::vector<Object> object;
-
+    // std::vector<Object> object;
+    static DiskManager* instance;
 public:
-    DiskManager(int T, int M, int N, int V, int G);
+    // DiskManager(int T, int M, int N, int V, int G);
+    static DiskManager* getInstance();
+    std::vector<Disk>& getDisks();
     void clean();
     void store(int id, int tag, int size); // 修改存储函数接口
+    static DiskManager* getInstance(int T, int M, int N, int V, int G);
 };
 
 #endif // DISKMANAGER_HPP

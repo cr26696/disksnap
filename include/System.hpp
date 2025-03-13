@@ -17,6 +17,7 @@
 #include "RequestManager.hpp"
 #include "ObjectManager.hpp"
 #include "Scheduler.hpp"
+#include "DiskManager.hpp"
 
 class System
 {

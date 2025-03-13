@@ -8,6 +8,8 @@
 #include <unordered_set>
 #include <iostream>
 #include <math.h>
+
+
 #include "System.hpp"
 #include "Scheduler.hpp"
 #include "MetaDefine.hpp"
@@ -20,9 +22,6 @@ int main()
 {
     int T, M, N, V, G;
     scanf("%d%d%d%d%d", &T, &M, &N, &V, &G);
-    RequestManager* requestManager = RequestManager::getInstance();
-    ObjectManager* objectManager = ObjectManager::getInstance();
-    Scheduler* scheduler = Scheduler::getInstance();
     System* system = System::getInstance(T, M, N, V, G);
     system->run();
 

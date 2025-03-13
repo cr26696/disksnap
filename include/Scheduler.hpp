@@ -17,7 +17,7 @@ class Scheduler
 {
 private:
     std::unordered_map<int, std::vector<int>> active_requests; // 对象编号，请求当前对象的所有请求id
-    Scheduler();
+    Scheduler() = default;
     ~Scheduler() = default;
     static Scheduler* instance;
     std::mutex mutex_;

@@ -7,4 +7,16 @@
 #define FRE_PER_SLICING 10 // 时间戳切片频率
 #define EXTRA_TIME 5 // 额外时间
 
+#define DEBUG_ENABLED 0
+#define DEBUG_PRINT(var)                                                                                      \
+    if (DEBUG_ENABLED)                                                                                        \
+    {                                                                                                         \
+        std::cout << "[D] " << #var << " = " << (var) << " (in " << __PRETTY_FUNCTION__ << ")" << std::endl; \
+    }
+#define DEBUG_LOG(msg)                       \
+    if (DEBUG_ENABLED)                       \
+    {                                        \
+        std::cout << "[D]: " << msg << endl; \
+    }
+
 #endif // METADEFINE_HPP

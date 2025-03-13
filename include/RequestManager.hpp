@@ -11,36 +11,20 @@
 
 class RequestManager {
 public:
-    static RequestManager* getInstance() {
-        if (instance == nullptr) {
-            instance = new RequestManager(); // 懒加载创建实例
-        }
-        return instance;
-    }
+    static RequestManager* getInstance();
 
-    ~RequestManager() {
-        delete instance;
-        instance = nullptr;
-    }
+    // ~RequestManager() {
+    //     delete instance;
+    //     instance = nullptr;
+    // }
 
-    std::vector<Request>& getRequests() {
-        return requests;
-    }
+    std::vector<Request>& getRequests();
 
-    void addRequest(const Request& req) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        requests.push_back(req);
-    }
+    void addRequest(const Request& req);
 
-    Request& getRequest(int index) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return requests[index];
-    }
+    Request& getRequest(int index);
 
-    int getSize() const {
-        std::lock_guard<std::mutex> lock(mutex_);
-        return requests.size();
-    }
+    int getSize() const;
 
 private:
     RequestManager() {}
@@ -52,5 +36,4 @@ private:
     mutable std::mutex mutex_;// 线程安全锁
 };
 
-RequestManager* RequestManager::instance = nullptr;
 #endif

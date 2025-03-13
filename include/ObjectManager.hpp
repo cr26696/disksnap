@@ -14,32 +14,17 @@ private:
     ObjectManager() {} // 私有构造函数，防止外部实例化
 
 public:
-    static ObjectManager* getInstance() {
-        if (instance == nullptr) {
-            instance = new ObjectManager(); // 懒加载创建实例
-        }
-        return instance;
-    }
+    static ObjectManager* getInstance();
 
-    ~ObjectManager() {
-        delete instance;
-        instance = nullptr;
-    }
+    ~ObjectManager();
 
     // 获取对象集合的引用
-    std::vector<Object>& getObjects() {
-        return objects;
-    }
+    std::vector<Object>& getObjects();
 
     // 添加对象
-    void addObject(const Object& obj) {
-        std::lock_guard<std::mutex> lock(mutex_);
-        objects.push_back(obj);
-    }
+    void addObject(const Object& obj);
 
-    // 其他管理方法
 };
 
-ObjectManager* ObjectManager::instance = nullptr; // 初始化静态成员
 
 #endif // OBJECTMANAGER_HPP
