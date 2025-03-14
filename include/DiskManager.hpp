@@ -34,19 +34,31 @@
 //     }
 // };
 
-class DiskManager {
+class DiskManager
+{
 private:
-    int T, M, N, V, G;
+    static DiskManager *instance;
     std::vector<Disk> disks;
-    // std::vector<Object> object;
-    static DiskManager* instance;
+
 public:
-    // DiskManager(int T, int M, int N, int V, int G);
-    static DiskManager* getInstance();
-    std::vector<Disk>& getDisks();
+    int DiskNum, DiskVolume, HeadToken;
+    std::unordered_set<int> canceled_reqs;
+    std::unordered_set<int> completed_reqs;
+    std::unordered_map<int, std::vector<int>> map_obj_diskid;
+private:
+    DiskManager(int DiskNum, int DiskVolume, int HeadToken);
+
+public:
+    static DiskManager &getInstance(int DiskNum, int DiskVolume, int HeadToken); // 传入磁盘数 磁盘存储空间大小 磁头移动速度
+    static DiskManager &getInstance();
+
+    std::vector<Disk*> get_disks(std::vector<int> disk_ids);
+    Disk& get_disk(int disk_id);
+    void store_obj(int id, int size, int tag); // 修改存储函数接口
+    void remove_obj(int obj_id);
+    void read();
     void clean();
-    void store(int id, int tag, int size); // 修改存储函数接口
-    static DiskManager* getInstance(int T, int M, int N, int V, int G);
+    void end();
 };
 
 #endif // DISKMANAGER_HPP
