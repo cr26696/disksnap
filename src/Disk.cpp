@@ -11,16 +11,13 @@ using namespace std;
 Disk::Disk(int volume, int G,int id)
     : volume(volume), tokenG(G),id(id)
 {
-<<<<<<< HEAD
-    free_blocks.emplace_back(1, V);
-=======
+    free_blocks.emplace_back(1, volume);
     head = 0;
     head_s = -1;
     elapsed = 0;
     blocks.resize(volume);
     job_count = 0;
     phase_end = false;
->>>>>>> 0765b762a2912a4be7c27519df21f2f81a2d5429
 }
 
 // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
@@ -96,7 +93,6 @@ void Disk::op_end()
     elapsed = tokenG;
     phase_end = true;
 }
-<<<<<<< HEAD
 
 
 /*
@@ -196,59 +192,6 @@ void Disk::write_obj(int object_id, int *obj_units, int object_size){
         }        
     }
     assert(current_write_point == object_size);
-=======
-//取消对应的请求，记录在diskmanager 释放磁盘空间
-void Disk::del_obj(int obj_id)
-{
-    unordered_set<int> canceled_reqs = DiskManager::getInstance().canceled_reqs;
-    if (map_obj_replica.find(obj_id) == map_obj_replica.end())
-    {
-        throw std::invalid_argument("del_obj failed,No object id in this disk");
-    }
-    //  找到对应的副本
-    Replica *rep = map_obj_replica[obj_id];
-    // 取消的读取请求插入到向量 准备返回
-    for(Request* req:map_obj_request[obj_id]){
-        canceled_reqs.insert(req->id);
-        job_count--;
-    }
-    map_obj_request[obj_id].clear(); // OPT 这里需不要从内存清除request？
-    // 释放磁盘空间
-    map_obj_part_addr.erase(obj_id);
-    for (int part = 0; part < rep->size; part++)
-    {
-        blocks[part] = nullptr; //
-    }
-    // 从磁盘存储记录删除
-    map_obj_replica.erase(obj_id);
-    // 从内存中删除
-    delete (rep);
-}
-void Disk::wrt_obj(Replica *replica)
-{
-    vector<Unit *> Units = replica->Units;
-    for (int part = 0; part < Units.size(); part++)
-    {
-        // TODO 改成选最适合空间存放 大优化
-        for (int i = 0; i < volume; i++)
-        {
-            if (blocks[i] == nullptr)
-            {
-                // 磁盘单元指向对应的 unit 可知道是第几块 对象id;
-                blocks[i] = Units[part];
-                map_obj_part_addr[replica->id][part] = i;
-                break;
-            }
-        }
-    }
-    // 修改相关信息
-    map_obj_replica[replica->id] = replica;
-    if (map_obj_request.find(replica->id) == map_obj_request.end())
-    {
-        unordered_set<Request *> relative_req_set;
-        map_obj_request[replica->id] = relative_req_set;
-    }
->>>>>>> 0765b762a2912a4be7c27519df21f2f81a2d5429
 }
 // scheduler选定磁盘后，调用这个函数
 void Disk::add_req(Request *req)
@@ -346,7 +289,6 @@ void Disk::task(std::vector<int> input_target, int disk_id)
     //     requests[objects[blocks[i]].last_request_point].complete[complete_id] = 1;
     // }
 }
-<<<<<<< HEAD
 
 /*
 *计算总剩余空间大小
@@ -359,7 +301,6 @@ int Disk::numberOfFreeBlocks_() {
     return all_free_size;
 }
 
-=======
 // 具体的查找算法，如果完成某个查找请求 放入compeletedTask
 void Disk::find()
 {
@@ -374,4 +315,3 @@ void Disk::end()
     phase_end = false;
     completed_reqs.clear();
 }
->>>>>>> 0765b762a2912a4be7c27519df21f2f81a2d5429

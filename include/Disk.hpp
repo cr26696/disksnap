@@ -12,7 +12,7 @@
 #include "MetaDefine.hpp"
 #include <unordered_map>
 #include <unordered_set>
-
+#include <utility>
 #include "Request.hpp"
 #include "Replica.hpp"
 #include "Unit.hpp"
@@ -35,6 +35,7 @@ private:
     int phase_end;                                                // 是否结束当前阶段
     std::vector<Unit *> blocks;                                   // 考虑这里就存 obj_id吗，需不需要其他信息？
     std::unordered_map<int, std::unordered_set<Request *>> map_obj_request; // obj_id <-> 请求指针set
+    std::list<pair<int, int>> free_blocks;
 public:
     int id;
     int job_count;
