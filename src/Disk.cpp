@@ -147,19 +147,32 @@ void Disk::wrt_obj(Replica *replica)
 }
 
 /*
- * 删除对象 并进行空闲块合并整理 按区间开头升序排序
- */
-void Disk::delete_obj(int *units, int object_size)
-{
-    vector<int> temp_free_units;             // 空闲碎片
-    vector<pair<int, int>> temp_free_blocks; // 空闲区间
-    for (int i = 1; i <= object_size; i++)
+* 删除本disk中编号为object_id的对象 并进行空闲块合并整理 按区间开头升序排序
+*/
+void Disk::delete_obj(int object_id){
+    unordered_set<int> canceled_reqs = DiskManager::getInstance().canceled_reqs;
+    if (map_obj_replica.find(object_id) == map_obj_replica.end())
     {
-        assert(blocks[units[i]] != 0);
-        blocks[units[i]] = 0;
-        temp_free_units.emplace_back(units[i]);
+        throw std::invalid_argument("del_obj failed,No object id in this disk");
     }
-    sort(temp_free_units.begin(), temp_free_units.end()); // 将碎片块排序
+    Replica *replica = map_obj_replica[object_id];//找到对应的副本
+    vector<int> temp_free_units;// 存放空闲碎片
+    vector<pair<int, int>> temp_free_blocks;// 存放合并空闲碎片后的空闲区间
+    for(Request* req:map_obj_request[object_id]){// 存储将取消的读取请求
+        canceled_reqs.insert(req->id);
+        job_count--;
+    }
+    map_obj_request[object_id].clear();
+    /*----------开始释放磁盘----------*/    
+    for(int i : map_obj_part_addr[object_id]){
+        assert(blocks[i] != nullptr);
+        blocks[i] = nullptr;
+        temp_free_units.emplace_back(i);
+    }
+    map_obj_replica.erase(object_id);
+    delete(replica);
+    /*----------开始整理空闲块----------*/ 
+    sort(temp_free_units.begin(), temp_free_units.end());// 将碎片块排序
     int start = temp_free_units[0], end = temp_free_units[0];
     for (int i = 1; i < temp_free_units.size(); i++)
     { // 将空闲碎片合并为空闲区间
@@ -167,26 +180,23 @@ void Disk::delete_obj(int *units, int object_size)
         {
             end = temp_free_units[i];
         }
-        else if (temp_free_units[i] != end + 1 || i == temp_free_units.size() - 1)
-        { // 若当前块与前一个块不连续或为最后一个区间
+        else if(temp_free_units[i] != end + 1){// 若当前块与前一个块不连续
             temp_free_blocks.emplace_back(start, end);
             start = temp_free_units[i];
             end = temp_free_units[i];
         }
     }
-    for (auto &block : temp_free_blocks)
-    {
+    temp_free_blocks.emplace_back(start, end);//插入最后一个区间 单块
+    for(auto& block : temp_free_blocks) {
         free_blocks.push_back(block);
     }
     free_blocks.sort();
     for (auto current_block = free_blocks.begin(); current_block != free_blocks.end();)
     {
         auto next_block = next(current_block);
-        if (next_block == free_blocks.end())
-            break;
-        assert(current_block->second == next_block->first - 1); // 理论上不会大于
-        if (current_block->second == next_block->first - 1)
-        { // 表示上一个空闲区别和下一个空闲区间相近 需要进行合并
+        if(next_block == free_blocks.end()) break;
+        assert(current_block->second < next_block->first);// 理论上不会大于 最多相邻
+        if(current_block->second == next_block->first - 1){// 上一个空闲区别和下一个空闲区间相邻 需要进行合并
             current_block->second = next_block->second;
             free_blocks.erase(next_block);
         }
@@ -198,41 +208,41 @@ void Disk::delete_obj(int *units, int object_size)
 }
 
 /*
- * 写入对象 优先满足连续存储 若无法连续存储 则进行分块存储
- */
-void Disk::write_obj(int object_id, int *obj_units, int object_size)
-{
+* 写入对象 优先满足连续存储 若无法连续存储 则进行分块存储
+*/
+void Disk::write_obj(Replica *replica){
     int current_write_point = 0;
     int temp_write_point = 0;
-    typedef list<pair<int, int>>::iterator p_it; // 记录暂存时所选择空闲块的迭代器
-    vector<pair<p_it, int>> temp_operate;        // 记录暂存空闲块与块大小
-    for (auto it = free_blocks.begin(); it != free_blocks.end(); it++)
-    {
-        int free_block_size = it->second - it->first + 1; // 当前空闲块的空间
-        // 找到可连续存储块时 放弃暂存 直接存储
-        if (free_block_size >= object_size)
-        {
-            for (int i = 0; i < object_size; i++)
-            { // 从0开始 因为可从首地址开始存储
-                assert(blocks[it->first + i] == 0);
-                blocks[it->first + i] = object_id;                // 存入磁盘
-                obj_units[++current_write_point] = it->first + i; // 标记对象块位置
+    typedef list<pair<int, int>>::iterator p_it;// 记录暂存时所选择空闲块的迭代器
+    vector<pair<p_it, int>> temp_operate;//记录暂存空闲块与块大小
+    for(auto it = free_blocks.begin(); it != free_blocks.end(); it++){
+        int free_block_size = it->second - it->first + 1;// 当前空闲块的空间
+        /*--------找到可连续存储块时 放弃分块暂存 直接存储--------*/
+        if(free_block_size >= replica->size){
+            for(int i = 0; i < replica->size; i++){
+                assert(blocks[it->first + i] == nullptr);
+                blocks[it->first + i] = &replica->Units[current_write_point];// 磁盘单元指向对应的unit
+                map_obj_part_addr[replica->id][current_write_point] = it->first + i;// 写入该副本的对象块在次磁盘中的位置
+                current_write_point++;
             }
-            if (free_block_size == object_size)
-            { // 若空闲块被填满，则删除该空闲块节点
+            if(free_block_size == replica->size){// 若空闲块被填满，则删除该空闲块节点
                 free_blocks.erase(it);
             }
-            else
-            { // 若空闲块没有被填满，则修改该空闲块区间头
-                it->first += object_size;
+            else{// 若空闲块没有被填满，则修改该空闲块区间头
+                it->first += replica->size;
             }
-            assert(current_write_point == object_size);
+            assert(current_write_point == replica->size);
+            // 修改相关信息
+            map_obj_replica[replica->id] = replica;
+            if (map_obj_request.find(replica->id) == map_obj_request.end()){
+                unordered_set<Request *> relative_req_set;
+                map_obj_request[replica->id] = relative_req_set;
+            }
             return;
         }
-        // 进行分块暂存记录 以防无法连续存储
-        if (temp_write_point != object_size)
-        {
-            int not_write_size = object_size - temp_write_point; // 仍未存入的对象块大小
+        /*--------进行分块暂存记录 以防无法连续存储---------*/
+        if(temp_write_point != replica->size){
+            int not_write_size = replica->size - temp_write_point;// 仍未存入的对象块大小
             // 标记暂存空间块使用情况 填满空闲块：填入剩余对象块剩余空间
             if (not_write_size >= free_block_size)
             {
@@ -246,14 +256,13 @@ void Disk::write_obj(int object_id, int *obj_units, int object_size)
             }
         }
     }
-    // 使用暂存操作
-    for (auto it : temp_operate)
-    {
-        for (int i = 0; i < it.second; i++)
-        {
-            assert(blocks[it.first->first + i] == 0);
-            blocks[it.first->first + i] = object_id;                // 存入磁盘
-            obj_units[++current_write_point] = it.first->first + i; // 标记对象块位置
+    /*-------------使用暂存操作---------------*/
+    for(auto it : temp_operate){
+        for(int i = 0; i < it.second; i++){
+            assert(blocks[it.first->first + i] == nullptr);
+            blocks[it.first->first + i] = &replica->Units[current_write_point];
+            map_obj_part_addr[replica->id][current_write_point] = it.first->first + i;
+            current_write_point++;
         }
         int free_block_size = it.first->second - it.first->first + 1;
         if (it.second == free_block_size)
@@ -265,7 +274,13 @@ void Disk::write_obj(int object_id, int *obj_units, int object_size)
             it.first->first += it.second;
         }
     }
-    assert(current_write_point == object_size);
+    assert(current_write_point == replica->size);
+    map_obj_replica[replica->id] = replica;
+    if (map_obj_request.find(replica->id) == map_obj_request.end()){
+        unordered_set<Request *> relative_req_set;
+        map_obj_request[replica->id] = relative_req_set;
+    }    
+    return;
 }
 // scheduler选定磁盘后，调用这个函数
 void Disk::add_req(Request *req)

@@ -35,7 +35,7 @@ private:
     int phase_end;                                                // 是否结束当前阶段
     std::vector<Unit *> blocks;                                   // 考虑这里就存 obj_id吗，需不需要其他信息？
     std::unordered_map<int, std::unordered_set<Request *>> map_obj_request; // obj_id <-> 请求指针set
-    std::list<pair<int, int>> free_blocks;
+    std::list<std::pair<int, int>> free_blocks;
 public:
     int id;
     int job_count;
@@ -51,14 +51,14 @@ public:
 
     void del_obj(int obj_id);
     void wrt_obj(Replica *replica);
-    // void write_obj(int object_id, int *obj_units, int size);
     void add_req(Request *);
     void find();
     void end();
 
     // void init(int G, int V);
-    void delete_obj(int *units, int object_size);
-    void write_obj(int object_id, int *obj_units, int object_size);
+    void delete_obj(int object_id);
+    void write_obj(Replica *replica);
+    void task(std::vector<int> input_target, int disk_id);
     int numberOfFreeBlocks_();
 
     // void store(int id, int tag, int size);
