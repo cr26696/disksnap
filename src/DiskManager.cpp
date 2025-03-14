@@ -69,7 +69,7 @@ void DiskManager::store_obj(int id, int size, int tag)
     for (int i : store_destination)
     {
         Replica *rep = new Replica(id, size, tag);
-        disks[i].wrt_obj(rep);
+        disks[i].write_obj(rep);
     }
 
     // 上报存储结果
@@ -100,7 +100,7 @@ void DiskManager::remove_obj(int obj_id)
         {
             continue; // 去下个磁盘
         }
-        d.del_obj(obj_id);
+        d.delete_obj(obj_id);
     }
     map_obj_diskid.erase(obj_id);
 }
