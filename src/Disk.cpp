@@ -125,7 +125,7 @@ void Disk::wrt_obj(Replica *replica)
 {
     for (int part = 0; part < replica->size; part++)
     {
-        // TODO 改成选最适合空间存放 大优化
+        // DEL 改成选最适合空间存放 大优化
         for (int i = 0; i < volume; i++)
         {
             if (blocks[i] == nullptr)
@@ -285,7 +285,7 @@ void Disk::write_obj(Replica *replica){
 // scheduler选定磁盘后，调用这个函数
 void Disk::add_req(Request *req)
 {
-    // TODO
+    // OPT 将这个函数拆分到 伪线程 persuad_thread
     job_count++;
     int obj_id = req->object_id;
     req->init_status(map_obj_replica[obj_id]->size);
@@ -310,7 +310,7 @@ int Disk::numberOfFreeBlocks_()
 // 具体的查找算法，如果完成某个查找请求 放入compeletedTask
 void Disk::find()
 {
-    // TODO
+    // OPT 磁盘内查找算法
     // 分析哪些块需要找
     // 根据块情况 操作磁头执行行动
     // 将找到的块记录 完成的请求从map_obj_req删除并将id添加到completed_reqs

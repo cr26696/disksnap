@@ -17,7 +17,7 @@ Scheduler& Scheduler::getInstance()
 bool Scheduler::add_request(int req_id,int obj_id)
 {   
     lock_guard<std::mutex> lock(mutex_);
-    //TODO 选择最适合的disk放入任务
+    //选择最适合的disk放入任务
     //找到能响应请求的disk
     DiskManager DM = DiskManager::getInstance();
     vector<Disk*> disks = DM.get_disks(DM.map_obj_diskid[req_id]);
@@ -32,9 +32,6 @@ bool Scheduler::add_request(int req_id,int obj_id)
     }
     Request* req = new Request(req_id,obj_id);
     disks[ideal_disk_id]->add_req(req);
-    // vector<Request>& requests = RequestManager::getInstance()->getRequests();
-    // int object_id = requests[req_id].object_id;
-    // active_requests[object_id].push_back(req_id);
     return true; // 假设添加总是成功
 }
 

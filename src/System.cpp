@@ -55,7 +55,7 @@ void System::run()
     {
         timestamp_action();
         delete_action();
-        write_action(); // TODO: 调用新的写函数
+        write_action();
         read_action();
         update_time();
         phase_end();
