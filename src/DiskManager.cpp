@@ -56,18 +56,32 @@ void DiskManager::clean()
 // 存放时要输出存储信息： 对象id 各副本存放位置
 void DiskManager::store_obj(int id, int size, int tag)
 {
-    vector<int> store_destination;
-    for (int i = 0; i < DiskNum; i++)
-    {
-        store_destination.push_back(i);
+    vector<int> Doptions;//disk options
+    // OPT 排除掉不可能存放的盘
+    vector<int> spaces;
+    for(int i = 0; i < DiskNum; i++){
+        spaces.push_back(disks[i].numberOfFreeBlocks_());
+        if(spaces[i]< size){
+            continue;
+        }
+        Doptions.push_back(i);
     }
-    // TODO 两步
-    // 排除掉不可能存放的盘
-
-    // 选出3个最适合存放的盘
-    // 存放
+    // 选出3个最适合存放的盘存放
+    int seleted[3];
+    for(int i=0;i<3;i++){
+        int space=spaces[Doptions[0]] ;//最大的空间
+        int max_idx=0;
+        for(int j=1;j<Doptions.size();j++){
+            if(spaces[Doptions[j]]>space){
+                max_idx = j;
+                space=spaces[Doptions[j]];
+            }
+        }
+        Doptions.erase(Doptions.begin()+max_idx);
+        seleted[i]=Doptions[max_idx];
+    }
     // 假设这里只有三个盘
-    for (int i : store_destination)
+    for (int i : seleted)
     {
         Replica *rep = new Replica(id, size, tag);
         disks[i].write_obj(rep);
@@ -75,9 +89,9 @@ void DiskManager::store_obj(int id, int size, int tag)
 
     // 上报存储结果
     printf("%d\n", id);
-    for (int i = 0; i < store_destination.size(); i++)
+    for (int i = 0; i < Doptions.size(); i++)
     {
-        int disk_id = store_destination[i];
+        int disk_id = Doptions[i];
         map_obj_diskid[id][i] = disk_id;
         printf("%d", disk_id);
         Disk &d = disks[disk_id];
