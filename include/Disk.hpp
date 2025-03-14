@@ -59,7 +59,6 @@ public:
     // void init(int G, int V);
     void delete_obj(int *units, int object_size);
     void write_obj(int object_id, int *obj_units, int object_size);
-    void task(std::vector<int> input_target, int disk_id);
     int numberOfFreeBlocks_();
 
     // void store(int id, int tag, int size);

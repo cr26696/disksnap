@@ -1,6 +1,6 @@
 // DiskManager.cpp
 #include "DiskManager.hpp"
-
+#include <map>
 using namespace std;
 
 DiskManager *DiskManager::instance = nullptr;
@@ -63,6 +63,7 @@ void DiskManager::store_obj(int id, int size, int tag)
     }
     // TODO 两步
     // 排除掉不可能存放的盘
+
     // 选出3个最适合存放的盘
     // 存放
     // 假设这里只有三个盘

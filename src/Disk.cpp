@@ -8,8 +8,8 @@
 #include "DiskManager.hpp"
 using namespace std;
 // 构造函数
-Disk::Disk(int volume, int G,int id)
-    : volume(volume), tokenG(G),id(id)
+Disk::Disk(int volume, int G, int id)
+    : volume(volume), tokenG(G), id(id)
 {
     free_blocks.emplace_back(1, volume);
     head = 0;
@@ -93,7 +93,7 @@ void Disk::op_end()
     elapsed = tokenG;
     phase_end = true;
 }
-//取消对应的请求，记录在diskmanager 释放磁盘空间
+// 取消对应的请求，记录在diskmanager 释放磁盘空间
 void Disk::del_obj(int obj_id)
 {
     unordered_set<int> canceled_reqs = DiskManager::getInstance().canceled_reqs;
@@ -104,7 +104,8 @@ void Disk::del_obj(int obj_id)
     //  找到对应的副本
     Replica *rep = map_obj_replica[obj_id];
     // 取消的读取请求插入到向量 准备返回
-    for(Request* req:map_obj_request[obj_id]){
+    for (Request *req : map_obj_request[obj_id])
+    {
         canceled_reqs.insert(req->id);
         job_count--;
     }
@@ -146,100 +147,123 @@ void Disk::wrt_obj(Replica *replica)
 }
 
 /*
-* 删除对象 并进行空闲块合并整理 按区间开头升序排序
-*/
-void Disk::delete_obj(int *units, int object_size){
-    vector<int> temp_free_units;// 空闲碎片
-    vector<pair<int, int>> temp_free_blocks;// 空闲区间
-    for(int i = 1; i <= object_size; i++){
+ * 删除对象 并进行空闲块合并整理 按区间开头升序排序
+ */
+void Disk::delete_obj(int *units, int object_size)
+{
+    vector<int> temp_free_units;             // 空闲碎片
+    vector<pair<int, int>> temp_free_blocks; // 空闲区间
+    for (int i = 1; i <= object_size; i++)
+    {
         assert(blocks[units[i]] != 0);
         blocks[units[i]] = 0;
         temp_free_units.emplace_back(units[i]);
     }
-    sort(temp_free_units.begin(), temp_free_units.end());// 将碎片块排序
+    sort(temp_free_units.begin(), temp_free_units.end()); // 将碎片块排序
     int start = temp_free_units[0], end = temp_free_units[0];
-    for(int i = 1; i < temp_free_units.size(); i++){// 将空闲碎片合并为空闲区间
-        if(temp_free_units[i] == end + 1){
+    for (int i = 1; i < temp_free_units.size(); i++)
+    { // 将空闲碎片合并为空闲区间
+        if (temp_free_units[i] == end + 1)
+        {
             end = temp_free_units[i];
         }
-        else if(temp_free_units[i] != end + 1 || i == temp_free_units.size() - 1){// 若当前块与前一个块不连续或为最后一个区间
+        else if (temp_free_units[i] != end + 1 || i == temp_free_units.size() - 1)
+        { // 若当前块与前一个块不连续或为最后一个区间
             temp_free_blocks.emplace_back(start, end);
             start = temp_free_units[i];
             end = temp_free_units[i];
         }
     }
-    for(auto& block : temp_free_blocks) {
+    for (auto &block : temp_free_blocks)
+    {
         free_blocks.push_back(block);
     }
     free_blocks.sort();
-    for(auto current_block = free_blocks.begin(); current_block != free_blocks.end();){
+    for (auto current_block = free_blocks.begin(); current_block != free_blocks.end();)
+    {
         auto next_block = next(current_block);
-        if(next_block == free_blocks.end()) break;
-        assert(current_block->second == next_block->first - 1);// 理论上不会大于
-        if(current_block->second == next_block->first - 1){// 表示上一个空闲区别和下一个空闲区间相近 需要进行合并
+        if (next_block == free_blocks.end())
+            break;
+        assert(current_block->second == next_block->first - 1); // 理论上不会大于
+        if (current_block->second == next_block->first - 1)
+        { // 表示上一个空闲区别和下一个空闲区间相近 需要进行合并
             current_block->second = next_block->second;
             free_blocks.erase(next_block);
         }
-        else{
+        else
+        {
             current_block++;
         }
-    }    
+    }
 }
 
-
 /*
-* 写入对象 优先满足连续存储 若无法连续存储 则进行分块存储
-*/
-void Disk::write_obj(int object_id, int *obj_units, int object_size){
+ * 写入对象 优先满足连续存储 若无法连续存储 则进行分块存储
+ */
+void Disk::write_obj(int object_id, int *obj_units, int object_size)
+{
     int current_write_point = 0;
     int temp_write_point = 0;
-    typedef list<pair<int, int>>::iterator p_it;// 记录暂存时所选择空闲块的迭代器
-    vector<pair<p_it, int>> temp_operate;//记录暂存空闲块与块大小
-    for(auto it = free_blocks.begin(); it != free_blocks.end(); it++){
-        int free_block_size = it->second - it->first + 1;// 当前空闲块的空间
+    typedef list<pair<int, int>>::iterator p_it; // 记录暂存时所选择空闲块的迭代器
+    vector<pair<p_it, int>> temp_operate;        // 记录暂存空闲块与块大小
+    for (auto it = free_blocks.begin(); it != free_blocks.end(); it++)
+    {
+        int free_block_size = it->second - it->first + 1; // 当前空闲块的空间
         // 找到可连续存储块时 放弃暂存 直接存储
-        if(free_block_size >= object_size){
-            for(int i = 0; i < object_size; i++){// 从0开始 因为可从首地址开始存储
+        if (free_block_size >= object_size)
+        {
+            for (int i = 0; i < object_size; i++)
+            { // 从0开始 因为可从首地址开始存储
                 assert(blocks[it->first + i] == 0);
-                blocks[it->first + i] = object_id;// 存入磁盘
-                obj_units[++current_write_point] = it->first + i;// 标记对象块位置
+                blocks[it->first + i] = object_id;                // 存入磁盘
+                obj_units[++current_write_point] = it->first + i; // 标记对象块位置
             }
-            if(free_block_size == object_size){// 若空闲块被填满，则删除该空闲块节点
+            if (free_block_size == object_size)
+            { // 若空闲块被填满，则删除该空闲块节点
                 free_blocks.erase(it);
             }
-            else{// 若空闲块没有被填满，则修改该空闲块区间头
+            else
+            { // 若空闲块没有被填满，则修改该空闲块区间头
                 it->first += object_size;
             }
             assert(current_write_point == object_size);
             return;
         }
         // 进行分块暂存记录 以防无法连续存储
-        if(temp_write_point != object_size){
-            int not_write_size = object_size - temp_write_point;// 仍未存入的对象块大小
+        if (temp_write_point != object_size)
+        {
+            int not_write_size = object_size - temp_write_point; // 仍未存入的对象块大小
             // 标记暂存空间块使用情况 填满空闲块：填入剩余对象块剩余空间
-            if(not_write_size >= free_block_size){
+            if (not_write_size >= free_block_size)
+            {
                 temp_operate.emplace_back(it, free_block_size);
                 temp_write_point += free_block_size;
             }
-            else{
+            else
+            {
                 temp_operate.emplace_back(it, not_write_size);
                 temp_write_point += not_write_size;
             }
-        }        
+        }
     }
     // 使用暂存操作
-    for(auto it : temp_operate){
-        for(int i = 0; i < it.second; i++){
+    for (auto it : temp_operate)
+    {
+        for (int i = 0; i < it.second; i++)
+        {
             assert(blocks[it.first->first + i] == 0);
-            blocks[it.first->first + i] = object_id;// 存入磁盘
-            obj_units[++current_write_point] = it.first->first + i;// 标记对象块位置
+            blocks[it.first->first + i] = object_id;                // 存入磁盘
+            obj_units[++current_write_point] = it.first->first + i; // 标记对象块位置
         }
         int free_block_size = it.first->second - it.first->first + 1;
-        if (it.second == free_block_size) { // 如果填满了整个空闲块，则删除该空闲块
+        if (it.second == free_block_size)
+        { // 如果填满了整个空闲块，则删除该空闲块
             free_blocks.erase(it.first);
-        } else { // 否则修改空闲块的起始位置
+        }
+        else
+        { // 否则修改空闲块的起始位置
             it.first->first += it.second;
-        }        
+        }
     }
     assert(current_write_point == object_size);
 }
@@ -254,98 +278,15 @@ void Disk::add_req(Request *req)
     unordered_set<Request *> &relative_reqs = map_obj_request[obj_id];
     relative_reqs.insert(req);
 }
-// 改到find逻辑
-void Disk::task(std::vector<int> input_target, int disk_id)
-{
-    // DEBUG_PRINT(disk_id);
-    // DEBUG_PRINT(head);
-    // DEBUG_PRINT(elapsed);
-    // if (input_target.empty())
-    // {
-    //     op_end();
-    //     DEBUG_PRINT(input_target.size());
-    //     return;
-    // }
-
-    // std::vector<int> target = input_target;
-    // auto it = std::lower_bound(target.begin(), target.end(), head + 1);
-    // if (it == target.begin() || it == target.end())
-    // {
-    //     DEBUG_LOG("neednt REarrage");
-    // }
-    // else
-    // {
-    //     std::vector<int> first_half(target.begin(), it);
-    //     std::vector<int> second_half(it, target.end());
-    //     target.clear();
-    //     target.insert(target.end(), second_half.begin(), second_half.end());
-    //     target.insert(target.end(), first_half.begin(), first_half.end());
-    // }
-
-    // int idx = 0;
-    // int tokens = tokenG;
-    // int distance = (target[0] - 1) - head;
-    // vector<int> found;
-    // if (distance < 0)
-    //     distance += 8000;
-    // DEBUG_PRINT(distance);
-    // if (distance + 64 > tokens)
-    // {
-    //     operate(JUMP, target[0] - 1);
-    //     op_end();
-    //     return;
-    // }
-    // else
-    // {
-    //     while (elapsed < tokens)
-    //     {
-    //         if (distance > 0)
-    //         {
-    //             if (!operate(PASS, distance))
-    //                 break;
-    //         }
-    //         if (!operate(READ, 0))
-    //             break;
-    //         found.push_back(target[idx]);
-    //         idx++;
-    //         if (idx >= target.size())
-    //             break;
-    //         distance = (target[idx] - 1) - head;
-    //         if (distance < 0)
-    //             distance += 8000;
-    //     }
-    // }
-    // op_end();
-    // vector<Request> &requests = RequestManager::getInstance()->getRequests();
-    // vector<Object> &objects = ObjectManager::getInstance()->getObjects();
-    // for (int i : found)
-    // {
-    //     int complete_id = 0;
-    //     for (int j = 1; j <= 3; j++)
-    //     {
-    //         if (disk_id == objects[blocks[i]].replica[j])
-    //         {
-    //             for (int k = 1; k <= objects[blocks[i]].size; k++)
-    //             {
-    //                 if (objects[blocks[i]].unit[j][k] == i)
-    //                 {
-    //                     complete_id = k;
-    //                     break;
-    //                 }
-    //             }
-    //         }
-    //         continue;
-    //     }
-    //     requests[objects[blocks[i]].last_request_point].complete[complete_id] = 1;
-    // }
-}
 
 /*
-*计算总剩余空间大小
-*/
-int Disk::numberOfFreeBlocks_() {
+ *计算总剩余空间大小
+ */
+int Disk::numberOfFreeBlocks_()
+{
     int all_free_size = 0;
-    for(auto it : free_blocks){
+    for (auto it : free_blocks)
+    {
         all_free_size += it.second - it.first + 1;
     }
     return all_free_size;
@@ -355,12 +296,72 @@ int Disk::numberOfFreeBlocks_() {
 void Disk::find()
 {
     // TODO
-    // 完成的任务从map_obj_req 清楚 并将id添加到completed_reqs
+    // 分析哪些块需要找
+    // 根据块情况 操作磁头执行行动
+    // 将找到的块记录 完成的请求从map_obj_req删除并将id添加到completed_reqs
+    vector<int> target;
+    for (auto it_map = map_obj_request.begin(); it_map != map_obj_request.end(); ++it_map)
+    {
+        for (const Request *req : it_map->second)
+        {
+            target.insert(target.end(), req->needs.begin(), req->needs.end());
+        }
+    }
+    sort(target.begin(), target.end());
+    for (auto it = target.begin(); it != target.end(); ++it)
+    {
+        if (*it >= head)
+        {
+            vector<int> first_half(target.begin(), it);
+            vector<int> second_half(it, target.end());
+            target.clear();
+            target.insert(target.end(), second_half.begin(), second_half.end());
+            target.insert(target.end(), first_half.begin(), first_half.end());
+            break;
+        }
+    }
+    int idx = 0;
+    while (idx != target.size() && !phase_end)
+    {
+        int distance = (target[idx] - head + volume) % volume; // 处理循环
+        if (distance == 0)
+        {
+            if (operate(READ, 0))
+            {
+                // 先判断找到哪个块了
+                Unit *unit = blocks[target[idx]];
+                for (Request *req : map_obj_request[unit->obj_id])
+                {
+                    // 从需求中删除找到的块
+                    req->needs.erase(remove(req->needs.begin(), req->needs.end(), target[idx]), req->needs.end());
+                    if (req->needs.empty())
+                    {
+                        completed_reqs.push_back(req->id);
+                        map_obj_request[unit->obj_id].erase(req);
+                    }
+                }
+            }
+            if (++idx >= target.size())
+                break;//退出外层while循环
+            distance = (target[idx] - head + volume) % volume;
+            continue;
+        }
+        if (elapsed + distance + 64 > tokenG)
+        {
+            operate(JUMP, target[idx]);
+            op_end();
+        }
+        else
+        {
+            operate(PASS, distance);
+            operate(READ, 0);
+        }
+    }
+    op_end();
 }
 // 刷新到下一帧 更新elapsed phase_end 清除完成的req
 void Disk::end()
 {
-    // TODO
     elapsed = 0;
     phase_end = false;
     completed_reqs.clear();
