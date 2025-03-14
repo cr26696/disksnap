@@ -46,7 +46,7 @@ public:
     std::vector<Disk>& getDisks();
     void clean();
     void store(int id, int tag, int size); // 修改存储函数接口
-    static DiskManager* getInstance(int T, int M, int N, int V, int G);
+    // static DiskManager* getInstance(int T, int M, int N, int V, int G);
 };
 
 #endif // DISKMANAGER_HPP

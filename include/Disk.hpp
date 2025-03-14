@@ -3,6 +3,7 @@
 #define DISK_HPP
 
 #include <vector>
+#include <list>
 #include <string>
 #include <iostream>
 #include <cassert>
@@ -31,7 +32,7 @@ private:
     int elapsed;          // 当前时间片已用token数
     int phase_end;        // 是否结束当前阶段
 
-
+    std::list<pair<int, int>> free_blocks;// 存储空闲块区间
     // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
     // 返回操作是否成功 pass 0也算成功
     bool operate(DiskOp op, int param);
@@ -42,12 +43,12 @@ public:
     Disk(int V, int G); // 构造函数
 
     // void init(int G, int V);
-    void delete_obj(int *units, int size);
-    void write_obj(int object_id, int *obj_units, int size);
+    void delete_obj(int *units, int object_size);
+    void write_obj(int object_id, int *obj_units, int object_size);
     void task(std::vector<int> input_target, int disk_id);
-    bool hasSpace(int size);
+    int numberOfFreeBlocks_();
 
-    void store(int id, int tag, int size);
+    // void store(int id, int tag, int size);
 };
 
 #endif // DISK_HPP
