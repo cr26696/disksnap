@@ -121,8 +121,7 @@ void Disk::del_obj(int obj_id)
 }
 void Disk::wrt_obj(Replica *replica)
 {
-    vector<Unit *> Units = replica->Units;
-    for (int part = 0; part < Units.size(); part++)
+    for (int part = 0; part < replica->size; part++)
     {
         // TODO 改成选最适合空间存放 大优化
         for (int i = 0; i < volume; i++)
@@ -130,7 +129,7 @@ void Disk::wrt_obj(Replica *replica)
             if (blocks[i] == nullptr)
             {
                 // 磁盘单元指向对应的 unit 可知道是第几块 对象id;
-                blocks[i] = Units[part];
+                blocks[i] = &replica->Units[part];
                 map_obj_part_addr[replica->id][part] = i;
                 break;
             }

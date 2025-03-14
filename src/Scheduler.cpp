@@ -44,7 +44,7 @@ bool Scheduler::del_request(int req_id)
     vector<Request>& requests = RequestManager::getInstance()->getRequests();
     int object_id = requests[req_id].object_id;
     auto& req_list = active_requests[object_id];
-    active_requests.find(req_id);
+    if(active_requests.find(req_id)==active_requests.end()) return false;
     auto it = std::find(req_list.begin(), req_list.end(), req_id);
     if (it != req_list.end())
     {
@@ -86,7 +86,7 @@ vector<int> Scheduler::get_task_for_disk(int disk_id)
     {
         sort(target.begin(), target.end());
     }
-    DEBUG_PRINT(target.size());
+    // DEBUG_PRINT(target.size());
     return target;
 }
 
@@ -119,7 +119,7 @@ void Scheduler::req_upload()
     //         }
     //     }
     // }
-    printf("%d\n",DM.completed_reqs.size());
+    printf("%zd\n",DM.completed_reqs.size());
     for(int req_id:DM.completed_reqs){
         info+= to_string(req_id)+"\n";
     }

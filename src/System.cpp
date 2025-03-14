@@ -145,7 +145,7 @@ void System::write_action()
     DiskManager &DM = DiskManager::getInstance();
     int n_write;
     scanf("%d", &n_write);
-    for (int i = 1; i <= n_write; i++)
+    for (int i = 0; i < n_write; i++)
     {
         int id, size, tag;
         scanf("%d%d%d", &id, &size, &tag);
@@ -168,9 +168,11 @@ void System::write_action()
         for (int j = 0; j < 3; j++)
         {
             Disk &disk = *disks[j];
+            //磁盘id
             printf("%d", disk.id);
             for (int k = 0; k < size; k++)
             {
+                //各块地址
                 printf(" %d", disk.map_obj_part_addr[id][k]);
             }
             printf("\n");

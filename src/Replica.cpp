@@ -1,24 +1,18 @@
 #include "Replica.hpp"
 #include "Unit.hpp"
-// #include <stdexcept>
 Replica::Replica(int id, int size, int tag) : id(id), size(size), tag(tag)
 {
     // 生成副本时，直接有各单元
     Units.resize(size);
     for (int part = 0; part < size; part++)
     {
-        Units[part] = new Unit(static_cast<Replica*>(this), part);
+        Units[part].part = part;
     }
     parts.resize(size);
 }
 
 Replica::~Replica()
 {
-    // 清除子单元
-    for (Unit *unit : Units)
-    {
-        delete (unit);
-    }
 }
 
 // std::vector<int> &Replica::getPart()
