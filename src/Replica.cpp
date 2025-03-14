@@ -7,8 +7,9 @@ Replica::Replica(int id, int size, int tag) : id(id), size(size), tag(tag)
     for (int part = 0; part < size; part++)
     {
         Units[part].part = part;
+        Units[part].obj_id = id;
     }
-    parts.resize(size);
+    // parts.resize(size);
 }
 
 Replica::~Replica()
