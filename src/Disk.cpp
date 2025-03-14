@@ -217,8 +217,9 @@ void Disk::write_obj(Replica *replica){
         if(free_block_size >= replica->size){
             for(int i = 0; i < replica->size; i++){
                 assert(blocks[it->first + i] == nullptr);
-                blocks[it->first + i] = &replica->Units[current_write_point++];// 磁盘单元指向对应的unit
+                blocks[it->first + i] = &replica->Units[current_write_point];// 磁盘单元指向对应的unit
                 map_obj_part_addr[replica->id][current_write_point] = it->first + i;// 写入该副本的对象块在次磁盘中的位置
+                current_write_point++;
             }
             if(free_block_size == replica->size){// 若空闲块被填满，则删除该空闲块节点
                 free_blocks.erase(it);

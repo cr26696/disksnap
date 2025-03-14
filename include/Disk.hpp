@@ -51,7 +51,6 @@ public:
 
     void del_obj(int obj_id);
     void wrt_obj(Replica *replica);
-    // void write_obj(int object_id, int *obj_units, int size);
     void add_req(Request *);
     void find();
     void end();
