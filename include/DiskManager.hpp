@@ -58,6 +58,8 @@ public:
     void remove_obj(int obj_id);
     void read();
     void clean();
+    void store(int id, int tag, int size); // 修改存储函数接口
+    // static DiskManager* getInstance(int T, int M, int N, int V, int G);
     void end();
 };
 
