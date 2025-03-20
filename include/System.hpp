@@ -2,7 +2,6 @@
 #ifndef SYSTEM_HPP
 #define SYSTEM_HPP
 
-#include "DiskManager.hpp"
 #include <vector>
 #include <cstdio>
 #include <cassert>
@@ -13,12 +12,10 @@
 #include <iostream>
 #include <math.h>
 #include "MetaDefine.hpp"
-#include "Replica.hpp" // 新增
-#include "RequestManager.hpp"
-#include "ObjectManager.hpp"
+#include "Replica.hpp"
+#include "PersuadeThread.hpp"
 #include "Scheduler.hpp"
 #include "DiskManager.hpp"
-
 class System
 {
 private:

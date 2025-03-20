@@ -56,7 +56,7 @@ void System::run()
         timestamp_action();
         delete_action();
         write_action();
-        read_action();
+        read_action();// TODO 调用persuade_thread使用查找功能
         update_time();
         phase_end();
     }
@@ -91,26 +91,12 @@ void System::delete_action()
         int id = _id[i];
         DM.remove_obj(id);
     }
-
-    printf("%d\n", DM.canceled_reqs.size());
-    for (int canceled_req_id : DM.canceled_reqs)
+    vector<int> canceled_reqs_id = DM.get_canceled_reqs_id();
+    int cancel_num = canceled_reqs_id.size();
+    printf("%d\n", cancel_num);
+    for (int i = 0; i < cancel_num; i++)
     {
-        printf("%d\n", canceled_req_id);
-        // int id = _id[i];
-        // int current_id = objects[id].last_request_point;
-        // while (current_id != 0)
-        // {
-        //     if (requests[current_id].is_done == false)
-        //     {
-        //         printf("%d\n", current_id);
-        //     }
-        //     current_id = requests[current_id].prev_id;
-        // }
-        // for (int j = 1; j <= REP_NUM; j++)
-        // {
-        //     DiskManager::getInstance().store_obj(objects[id].replica[j], *objects[id].unit[j], objects[id].size);
-        // }
-        // objects[id].is_delete = true;
+        printf("%d\n", canceled_reqs_id[i]);
     }
 
     fflush(stdout);
@@ -118,7 +104,7 @@ void System::delete_action()
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
 void System::read_action()
 {
-    Scheduler &SD = Scheduler::getInstance();
+    // Scheduler &SD = Scheduler::getInstance();
     int n_read;
     int request_id, object_id;
     // vector<Request> &requests = RequestManager::getInstance()->getRequests();
@@ -127,13 +113,7 @@ void System::read_action()
     for (int i = 0; i < n_read; i++)
     {
         scanf("%d%d", &request_id, &object_id);
-        // 生成requst
         SD.add_request(request_id, object_id);
-        // requests[request_id].object_id = object_id;
-        // requests[request_id].prev_id = objects[object_id].last_request_point;
-        // objects[object_id].last_request_point = request_id;
-        // requests[request_id].is_done = false;
-        // Scheduler::getInstance()->del_request(current_id);
     }
     // 找完后输出？
     SD.req_upload();
@@ -172,7 +152,7 @@ void System::write_action()
             printf("%d", disk.id);
             for (int k = 0; k < size; k++)
             {
-                //各块地址
+                
                 printf(" %d", disk.map_obj_part_addr[id][k]);
             }
             printf("\n");

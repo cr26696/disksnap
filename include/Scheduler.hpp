@@ -11,12 +11,14 @@
 #include "Object.hpp"
 #include "RequestManager.hpp" 
 #include "ObjectManager.hpp"
+#include "PersuadeThread.hpp"
 #include <mutex>
 
 class Scheduler
 {
 private:
     std::unordered_map<int, std::vector<int>> active_requests; // 对象编号，请求当前对象的所有活跃请求id
+    
     Scheduler() = default;
     ~Scheduler() = default;
     static Scheduler* instance;

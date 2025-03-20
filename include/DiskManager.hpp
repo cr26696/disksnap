@@ -1,10 +1,6 @@
 #ifndef DISKMANAGER_HPP
 #define DISKMANAGER_HPP
 
-#include <vector>
-#include "Replica.hpp" // 新增
-#include "Object.hpp"
-#include "Disk.hpp"
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
@@ -15,36 +11,22 @@
 #include <iostream>
 #include <math.h>
 #include "MetaDefine.hpp"
-
-// 为什么重复定义了一个Disk类？
-// class Disk {
-// public:
-//     void init() {
-//         // 初始化磁盘
-//     }
-
-//     bool hasSpace(int size) {
-//         // 检查磁盘是否有足够的空间
-//         return true; // 伪代码实现
-//     }
-
-//     void store(int id, int tag, int size) {
-//         // 存储对象的逻辑
-//         // 伪代码实现
-//     }
-// };
-
+#include "Object.hpp"
+#include "Replica.hpp"
+#include "Disk.hpp"
+#include "PersuadeThread.hpp"
 class DiskManager
 {
 private:
     static DiskManager *instance;
-    std::vector<Disk> disks;
-
-public:
     int DiskNum, DiskVolume, HeadToken;
-    std::unordered_set<int> canceled_reqs;
-    std::unordered_set<int> completed_reqs;
-    std::unordered_map<int, std::vector<int>> map_obj_diskid;
+    std::vector<Disk> disks;
+    std::vector<PersuadeThread> job_threads;
+public:
+    Object objects[MAX_OBJECT_NUM];//结构体数组，存放全部占内存大小 6*4*100k = 2.4M
+    // std::unordered_set<int> canceled_reqs;
+    // std::unordered_set<int> completed_reqs;
+    // std::unordered_map<int, std::vector<int>> map_obj_diskid;
 private:
     DiskManager(int DiskNum, int DiskVolume, int HeadToken);
 
@@ -56,9 +38,10 @@ public:
     Disk& get_disk(int disk_id);
     void store_obj(int id, int size, int tag); // 修改存储函数接口
     void remove_obj(int obj_id);
-    void read();
+    void request_obj(int request_id,int object_id);
+    vector<int> get_canceled_reqs_id();
+    vector<int> get_complete_reqs_id();
     void clean();
-    void store(int id, int tag, int size); // 修改存储函数接口
     // static DiskManager* getInstance(int T, int M, int N, int V, int G);
     void end();
 };

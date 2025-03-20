@@ -10,13 +10,13 @@ class Request
     int id;
     int object_id;
     int size;
-    std::vector<int> needs;
+    //TODO 优化成位运算
     bool complete[6];
+    std::vector<int> needs;
     int prev_id;
 
     public:
-    Request(int id,int object_id);
-    void init_status(int size);
+    Request(int id,int object_id,int size);
     bool is_complete();
 };
 

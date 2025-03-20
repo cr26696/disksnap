@@ -16,22 +16,27 @@ Scheduler& Scheduler::getInstance()
 
 bool Scheduler::add_request(int req_id,int obj_id)
 {   
-    lock_guard<std::mutex> lock(mutex_);
-    //选择最适合的disk放入任务
-    //找到能响应请求的disk
-    DiskManager DM = DiskManager::getInstance();
-    vector<Disk*> disks = DM.get_disks(DM.map_obj_diskid[req_id]);
-    //选出任务最少的disk
-    int ideal_disk_id = 0;
-    int min_job_count = disks[0]->job_count;
-    for(int i=1;i<3;i++){
-        if(disks[i]->job_count < min_job_count){
-            ideal_disk_id = i;
-            min_job_count = disks[i]->job_count;
-        }
-    }
-    Request* req = new Request(req_id,obj_id);
-    disks[ideal_disk_id]->add_req(req);
+    // //选择最适合的disk放入任务
+    // //找到能响应请求的disk
+    // DiskManager DM = DiskManager::getInstance();
+    // Object &obj = DM.objects[obj_id];
+    // vector<Disk*> disks;
+    // for(int i=0;i<REP_NUM;i++){
+    //     int disk_id = obj.diskid_replica[i];
+    //     disks.push_back(DM.get_disk(disk_id));
+    // }
+    // = DM.get_disks(DM.map_obj_diskid[req_id]);
+    // //选出任务最少的disk
+    // int ideal_disk_id = 0;
+    // int min_job_count = disks[0]->job_count;
+    // for(int i=1;i<3;i++){
+    //     if(disks[i]->job_count < min_job_count){
+    //         ideal_disk_id = i;
+    //         min_job_count = disks[i]->job_count;
+    //     }
+    // }
+    // Request* req = new Request(req_id,obj_id);
+    // disks[ideal_disk_id]->add_req(req);
     return true; // 假设添加总是成功
 }
 
@@ -91,7 +96,7 @@ void Scheduler::req_upload()
 {
     DiskManager& DM = DiskManager::getInstance();
     lock_guard<std::mutex> lock(mutex_);
-    DM.read();
+    DM.request_obj();
     int complete_num = 0;
     string info = "";
     // bool complete_flag;

@@ -1,4 +1,3 @@
-// ObjectManager.hpp
 #ifndef OBJECTMANAGER_HPP
 #define OBJECTMANAGER_HPP
 
