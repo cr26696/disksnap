@@ -164,7 +164,7 @@ void Disk::wrt_obj(Object &info)
     int obj_id = info.id;
     int size = info.size;
     // 直接尝试写入一个新的 对象
-    replicas[obj_id] = new Replica{{-1},info};//初始化值-1
+    replicas[obj_id] = new Replica(obj_id, size, info.tag);//初始化值-1
     Replica* replica = replicas[obj_id];
     int current_write_point = 0;
     int temp_write_point = 0;

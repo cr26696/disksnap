@@ -104,7 +104,7 @@ void System::delete_action()
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
 void System::read_action()
 {
-    // Scheduler &SD = Scheduler::getInstance();
+    Scheduler &SD = Scheduler::getInstance();
     int n_read;
     int request_id, object_id;
     // vector<Request> &requests = RequestManager::getInstance()->getRequests();

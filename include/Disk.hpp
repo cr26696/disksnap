@@ -17,6 +17,7 @@
 #include "Request.hpp"
 #include "Replica.hpp"
 #include "Unit.hpp"
+#include "Object.hpp"
 
 enum DiskOp
 {
@@ -43,7 +44,7 @@ public:
     bool phase_end; // 是否结束当前阶段
     // int job_count;
     // std::unordered_map<int, Replica *> map_obj_replica;     // obj_id <-> 副本指针
-    // std::unordered_map<int, std::vector<int>> map_obj_part_addr; // obj_id <-> 各块存储地址
+    std::unordered_map<int, std::vector<int>> map_obj_part_addr; // obj_id <-> 各块存储地址
     // std::vector<int> completed_reqs; // 帧结束清空 记录完成请求的id
 public:
     Disk(int V, int G, int id); // 构造函数

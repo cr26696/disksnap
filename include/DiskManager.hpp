@@ -26,7 +26,8 @@ public:
     Object objects[MAX_OBJECT_NUM];//结构体数组，存放全部占内存大小 6*4*100k = 2.4M
     // std::unordered_set<int> canceled_reqs;
     // std::unordered_set<int> completed_reqs;
-    // std::unordered_map<int, std::vector<int>> map_obj_diskid;
+    std::unordered_map<int, std::vector<int>> map_obj_diskid;
+    
 private:
     DiskManager(int DiskNum, int DiskVolume, int HeadToken);
 
@@ -39,8 +40,8 @@ public:
     void store_obj(int id, int size, int tag); // 修改存储函数接口
     void remove_obj(int obj_id);
     void request_obj(int request_id,int object_id);
-    vector<int> get_canceled_reqs_id();
-    vector<int> get_complete_reqs_id();
+    std::vector<int> get_canceled_reqs_id();
+    std::vector<int> get_complete_reqs_id();
     void clean();
     // static DiskManager* getInstance(int T, int M, int N, int V, int G);
     void end();
