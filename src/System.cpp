@@ -57,7 +57,6 @@ void System::run()
         delete_action();
         write_action();
         read_action();// TODO 调用persuade_thread使用查找功能
-        update_time();
         phase_end();
     }
 }
@@ -67,16 +66,18 @@ void System::timestamp_action()
     int timestamp;
     scanf("%*s%d", &timestamp);
     printf("TIMESTAMP %d\n", timestamp);
+    TimeStamp = timestamp;
     fflush(stdout);
 }
 void System::update_time()
 {
-    // 更新时间，更新子组件
+    TimeStamp ++;
 }
 
 void System::delete_action()
 {
-    DiskManager DM = DiskManager::getInstance();
+    Scheduler &SD = Scheduler::getInstance();  
+    DiskManager &DM = DiskManager::getInstance();
     int n_delete;
     static int _id[MAX_OBJECT_NUM];
     // vector<Request> &requests = RequestManager::getInstance()->getRequests();
@@ -91,7 +92,7 @@ void System::delete_action()
         int id = _id[i];
         DM.remove_obj(id);
     }
-    vector<int> canceled_reqs_id = DM.get_canceled_reqs_id();
+    vector<int> canceled_reqs_id = SD.get_canceled_reqs_id();
     int cancel_num = canceled_reqs_id.size();
     printf("%d\n", cancel_num);
     for (int i = 0; i < cancel_num; i++)
@@ -104,7 +105,7 @@ void System::delete_action()
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
 void System::read_action()
 {
-    // Scheduler &SD = Scheduler::getInstance();
+    Scheduler &SD = Scheduler::getInstance();
     int n_read;
     int request_id, object_id;
     // vector<Request> &requests = RequestManager::getInstance()->getRequests();
@@ -115,6 +116,7 @@ void System::read_action()
         scanf("%d%d", &request_id, &object_id);
         SD.add_request(request_id, object_id);
     }
+    SD.excute_find();
     // 找完后输出？
     SD.req_upload();
     fflush(stdout);
@@ -129,7 +131,7 @@ void System::write_action()
     {
         int id, size, tag;
         scanf("%d%d%d", &id, &size, &tag);
-        DM.store_obj(id, size, tag);
+        Object &obj_info = DM.store_obj(id, size, tag);
         // int *data = static_cast<int *>(malloc(sizeof(int) * (size + 1)));
         // for (int k = 1; k <= size; k++)
         // {
@@ -143,20 +145,22 @@ void System::write_action()
         //     DiskManager::getInstance().store(id, id, size); // 直接调用diskManager的store方法
         // }
 
-        printf("%d\n", id);
-        vector<Disk *> disks = DM.get_disks(DM.map_obj_diskid[id]);
-        for (int j = 0; j < 3; j++)
-        {
-            Disk &disk = *disks[j];
-            //磁盘id
-            printf("%d", disk.id);
-            for (int k = 0; k < size; k++)
-            {
+        //现在diskmanager的store中已经上报过了
+        // printf("%d\n", id);
+        // // vector<Disk *> disks = DM.get_disks(DM.map_obj_diskid[id]);
+        // for (int j = 0; j < 3; j++)
+        // {
+        //     int disk_id = obj_info.diskid_replica[j];
+        //     Disk &disk = DM.get_disk(disk_id);
+        //     //磁盘ido
+        //     printf("%d", disk.id);
+        //     for (int k = 0; k < size; k++)
+        //     {
                 
-                printf(" %d", disk.map_obj_part_addr[id][k]);
-            }
-            printf("\n");
-        }
+        //         printf(" %d", disk.map_obj_part_addr[id][k]);
+        //     }
+        //     printf("\n");
+        // }
     }
 
     fflush(stdout);
@@ -165,4 +169,5 @@ void System::write_action()
 void System::phase_end()
 {
     DiskManager::getInstance().end();
+    Scheduler::getInstance().end();
 }

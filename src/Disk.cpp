@@ -11,7 +11,7 @@ using namespace std;
 Disk::Disk(int volume, int G, int id)
     : volume(volume), tokenG(G), id(id)
 {
-    free_blocks.emplace_back(1, volume);
+    free_blocks.emplace_back(0, volume-1);
     head = 0;
     head_s = -1;
     elapsed = 0;
@@ -74,6 +74,7 @@ bool Disk::operate(DiskOp op, int param)
             head_s = static_cast<int>(std::ceil(consume_token * 0.8));
             printf("r");
             head++;
+            return true;
         }
         break;
     default:
@@ -164,7 +165,7 @@ void Disk::wrt_obj(Object &info)
     int obj_id = info.id;
     int size = info.size;
     // 直接尝试写入一个新的 对象
-    replicas[obj_id] = new Replica{{-1},info};//初始化值-1
+    replicas[obj_id] = new Replica{info};//初始化 注意part中全为0，使用需要根据size判断
     Replica* replica = replicas[obj_id];
     int current_write_point = 0;
     int temp_write_point = 0;
@@ -178,7 +179,7 @@ void Disk::wrt_obj(Object &info)
         {
             for (int i = 0; i < size; i++)
             {
-                // assert(blocks[it->first + i] == nullptr);
+                assert(blocks[it->first + i] == nullptr);
                 blocks[it->first + i] = std::make_pair(obj_id,i);        // 磁盘单元指向对应的unit
                 replica->addr_part[current_write_point]=it->first+i;
                 // map_obj_part_addr[replica->id][current_write_point] = it->first + i; // 写入该副本的对象块在次磁盘中的位置
@@ -266,7 +267,7 @@ int Disk::numberOfFreeBlocks_()
     return all_free_size;
 }
 //调用者自行判断对象指针是否为nullptr(不存在或被删除)
-inline Replica *Disk::get_replica(int obj_id)
+Replica *Disk::get_replica(int obj_id)
 {
 	return replicas[obj_id];
 }

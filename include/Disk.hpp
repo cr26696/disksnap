@@ -17,6 +17,7 @@
 #include "Request.hpp"
 #include "Replica.hpp"
 #include "Unit.hpp"
+#include "Object.hpp"
 
 enum DiskOp
 {

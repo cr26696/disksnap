@@ -24,7 +24,7 @@ private:
     int DiskNum;
     int DiskVolume;
     int TokenG;//时间片内时间长度
-    int TimeStamp;//当前时间戳
+    int TimeStamp=0;//当前时间戳
 
 private:
     System(const System &) = delete;
