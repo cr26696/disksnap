@@ -56,7 +56,7 @@ void DiskManager::clean()
     // }
 }
 // 存放时要输出存储信息： 对象id 各副本存放位置
-//返回存储对象的信息
+// 返回存储对象的信息
 Object &DiskManager::store_obj(int id, int size, int tag)
 {
     objects[id] = Object(id, size, tag);
@@ -74,8 +74,9 @@ Object &DiskManager::store_obj(int id, int size, int tag)
         }
         Doptions.push_back(i);
     }
-    //排序
-    sort(Doptions.begin(), Doptions.end(), [&](int a, int b) { return spaces[a] > spaces[b]; });
+    // 排序
+    sort(Doptions.begin(), Doptions.end(), [&](int a, int b)
+         { return spaces[a] > spaces[b]; });
     // 假设排序后前三个盘空间最大
     for (int i = 0; i < REP_NUM; i++)
     {
@@ -84,24 +85,27 @@ Object &DiskManager::store_obj(int id, int size, int tag)
         // Replica *rep = new Replica{id, size, tag};
         disks[disk_id].wrt_obj(object);
     }
-
+    bool mute = false;
     // 上报存储结果
-    printf("%d\n", id);
-    for (int i = 0; i < REP_NUM; i++)
+    if (!mute)
     {
-        int disk_id = Doptions[i];
-        Disk &d = disks[disk_id];
-        printf("%d", disk_id+1);
-        // 每个块的存储地址
-        vector<int> addrs = d.get_store_pos(id);
-        string s;
-        for (int k = 0; k < size; k++)
+        printf("%d\n", id);
+        for (int i = 0; i < REP_NUM; i++)
         {
-            // s += " " + addrs[k];
-            printf(" %d", addrs[k]+1);
+            int disk_id = Doptions[i];
+            Disk &d = disks[disk_id];
+            printf("%d", disk_id + 1);
+            // 每个块的存储地址
+            vector<int> addrs = d.get_store_pos(id);
+            string s;
+            for (int k = 0; k < size; k++)
+            {
+                // s += " " + addrs[k];
+                printf(" %d", addrs[k] + 1);
+            }
+            // printf("%s\n", s.c_str());
+            printf("\n");
         }
-        // printf("%s\n", s.c_str());
-        printf("\n");
     }
     return object;
 }
@@ -113,9 +117,9 @@ void DiskManager::remove_obj(int obj_id)
     for (int i = 0; i < REP_NUM; i++)
     {
         int disk_id = info.diskid_replica[i];
-        disks[disk_id].del_obj(info);
-        PersuadeThread t = SD.get_disk_thread(disk_id);
+        PersuadeThread &t = SD.get_disk_thread(disk_id);
         t.rmv_req(info);
+        disks[disk_id].del_obj(info);
     }
     // objects[obj_id]= //这里直接没清理的必要了
 }

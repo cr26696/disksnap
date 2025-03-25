@@ -56,7 +56,7 @@ void System::run()
         timestamp_action();
         delete_action();
         write_action();
-        read_action();// TODO 调用persuade_thread使用查找功能
+        read_action(); // TODO 调用persuade_thread使用查找功能
         phase_end();
     }
 }
@@ -71,12 +71,12 @@ void System::timestamp_action()
 }
 void System::update_time()
 {
-    TimeStamp ++;
+    TimeStamp++;
 }
 
 void System::delete_action()
 {
-    Scheduler &SD = Scheduler::getInstance();  
+    Scheduler &SD = Scheduler::getInstance();
     DiskManager &DM = DiskManager::getInstance();
     int n_delete;
     static int _id[MAX_OBJECT_NUM];
@@ -99,12 +99,12 @@ void System::delete_action()
     {
         printf("%d\n", canceled_reqs_id[i]);
     }
-
     fflush(stdout);
 }
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
 void System::read_action()
 {
+    bool mute = false;
     Scheduler &SD = Scheduler::getInstance();
     int n_read;
     int request_id, object_id;
@@ -118,7 +118,10 @@ void System::read_action()
     }
     SD.excute_find();
     // 找完后输出？
-    SD.req_upload();
+    if (!mute)
+    {
+        SD.req_upload();
+    }
     fflush(stdout);
 }
 
@@ -145,18 +148,18 @@ void System::write_action()
         //     DiskManager::getInstance().store(id, id, size); // 直接调用diskManager的store方法
         // }
 
-        //现在diskmanager的store中已经上报过了
-        // printf("%d\n", id);
-        // // vector<Disk *> disks = DM.get_disks(DM.map_obj_diskid[id]);
-        // for (int j = 0; j < 3; j++)
-        // {
-        //     int disk_id = obj_info.diskid_replica[j];
-        //     Disk &disk = DM.get_disk(disk_id);
-        //     //磁盘ido
-        //     printf("%d", disk.id);
-        //     for (int k = 0; k < size; k++)
-        //     {
-                
+        // 现在diskmanager的store中已经上报过了
+        //  printf("%d\n", id);
+        //  // vector<Disk *> disks = DM.get_disks(DM.map_obj_diskid[id]);
+        //  for (int j = 0; j < 3; j++)
+        //  {
+        //      int disk_id = obj_info.diskid_replica[j];
+        //      Disk &disk = DM.get_disk(disk_id);
+        //      //磁盘ido
+        //      printf("%d", disk.id);
+        //      for (int k = 0; k < size; k++)
+        //      {
+
         //         printf(" %d", disk.map_obj_part_addr[id][k]);
         //     }
         //     printf("\n");

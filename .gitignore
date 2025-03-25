@@ -2,6 +2,7 @@ build
 *.exe
 .vs
 .vscode/*
+data/*
 
 disksnap.zip
 compile.bat
@@ -13,3 +14,5 @@ result.txt
 debug.txt
 code_craft.ilk
 code_craft.pdb
+code_craft.exe.orig
+code_craft.instr.pdb

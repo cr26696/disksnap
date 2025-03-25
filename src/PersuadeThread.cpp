@@ -29,14 +29,20 @@ void PersuadeThread::add_req(int req_id, Object &info)
 
 void PersuadeThread::rmv_req(Object &obj)
 {
-    // 先判断磁盘是否存放了这个对象
-    if (!disk->get_replica(obj.id))
+    // 先执行此代码，需要确保磁盘存放了这个对象
+    if (disk->get_replica(obj.id) == nullptr)
     {
-        return; // 没有存放在此磁盘，不进行任何操作
+        throw std::logic_error("PersuadeThread::rmv_req: try to get unexist object");
     }
     // 1.删除对应任务 2.删除对应块
+    vector<Request *> req_vec;
     for (auto req : task_requests)
     {
+        req_vec.push_back(req);
+    }
+    for (int i = 0; i < req_vec.size(); i++)
+    {
+        Request *req = req_vec[i];
         if (req->object_id == obj.id)
         {
             task_requests.erase(req);
@@ -78,7 +84,7 @@ void PersuadeThread::excute_find()
     int distance;
     while (it_addr != task_blocks.end() && !disk->phase_end)
     {
-    distance = (*it_addr - disk->head + volume) % volume; // 处理循环
+        distance = (*it_addr - disk->head + volume) % volume; // 处理循环
         // 已在目标上
         if (distance == 0)
         {
@@ -87,13 +93,14 @@ void PersuadeThread::excute_find()
                 int obj_id, part;
                 std::tie(obj_id, part) = disk->get_block(*it_addr);
                 // 为所有需要此part的请求更新完成情况
-                //手动从uset构造出vec 方便遍历
+                // 手动从uset构造出vec 方便遍历
                 vector<Request *> task_vec;
-                for(Request *req:task_requests){
+                for (Request *req : task_requests)
+                {
                     task_vec.push_back(req);
                 }
-                //遍历ve
-                for (int i=0;i<task_vec.size();i++)
+                // 遍历ve
+                for (int i = 0; i < task_vec.size(); i++)
                 {
                     Request *req = task_vec[i];
                     if (req->object_id == obj_id)
@@ -109,8 +116,8 @@ void PersuadeThread::excute_find()
                 }
                 // 已找到块，从待找块地址task_blocks中删除
                 it_addr = task_blocks.erase(it_addr);
-                if(it_addr==task_blocks.end())
-                break;
+                if (it_addr == task_blocks.end())
+                    break;
                 distance = (*it_addr - disk->head + volume) % volume;
                 continue; // 下次while循环
             }
