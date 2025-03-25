@@ -117,7 +117,7 @@ void Disk::del_obj(Object &info)
         int addr = replica->addr_part[i];
         // assert(blocks[i] != nullptr);
         blocks[addr].reset();
-        temp_free_units.emplace_back(i);
+        temp_free_units.emplace_back(addr);
     }
     replicas[object_id] = nullptr;
     delete (replica);
@@ -179,7 +179,7 @@ void Disk::wrt_obj(Object &info)
         {
             for (int i = 0; i < size; i++)
             {
-                assert(blocks[it->first + i] == nullptr);
+                // assert(blocks[it->first + i] == nullptr);
                 blocks[it->first + i] = std::make_pair(obj_id,i);        // 磁盘单元指向对应的unit
                 replica->addr_part[current_write_point]=it->first+i;
                 // map_obj_part_addr[replica->id][current_write_point] = it->first + i; // 写入该副本的对象块在次磁盘中的位置
