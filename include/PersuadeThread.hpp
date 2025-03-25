@@ -2,6 +2,7 @@
 #define PERSUADE_THREAD_HPP
 #include <set>
 #include <unordered_set>
+#include <vector>
 #include "Disk.hpp"
 // 添加 执行 查找任务 记录与磁盘相关的任务信息
 // 创建于diskmanager
@@ -13,7 +14,7 @@ private:
 
 public:
 	// 存储任务块
-	std::unordered_set<Request *> task_requests; // size 对应job_count;
+	std::vector<Request *> task_requests; // size 对应job_count;
 	std::set<int> task_blocks;
 	// 只会在删除对象时才会有内容 一帧结尾时调用end函数清空
 	std::vector<Request *> canceled_requests;
