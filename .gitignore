@@ -1,0 +1,15 @@
+build
+*.exe
+.vs
+.vscode/*
+
+disksnap.zip
+compile.bat
+2025-code-craft-preliminary
+run.bat
+rundebug.bat
+code_craft.exe
+result.txt
+debug.txt
+libstdc++-6.dll
+sample_practice.in
