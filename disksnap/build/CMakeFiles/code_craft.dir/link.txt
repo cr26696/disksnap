@@ -1,3 +1,0 @@
-D:\SE\cmake\bin\cmake.exe -E rm -f CMakeFiles\code_craft.dir/objects.a
-D:\SE\MinGW\ucrt64\bin\ar.exe qc CMakeFiles\code_craft.dir/objects.a @CMakeFiles\code_craft.dir\objects1.rsp
-D:\SE\MinGW\ucrt64\bin\g++.exe -g -Wl,--whole-archive CMakeFiles\code_craft.dir/objects.a -Wl,--no-whole-archive -o C:\Users\Ifrost.LD\Desktop\HUAWEI\2025-code-craft-preliminary\disksnap\code_craft.exe -Wl,--out-implib,C:\Users\Ifrost.LD\Desktop\HUAWEI\2025-code-craft-preliminary\disksnap\libcode_craft.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\code_craft.dir\linkLibs.rsp
