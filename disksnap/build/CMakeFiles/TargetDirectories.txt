@@ -1,0 +1,3 @@
+C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build/CMakeFiles/code_craft.dir
+C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build/CMakeFiles/edit_cache.dir
+C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build/CMakeFiles/rebuild_cache.dir

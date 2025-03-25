@@ -1,0 +1,62 @@
+[
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\Disk.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\Disk.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/Disk.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/Disk.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\DiskManager.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\DiskManager.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/DiskManager.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/DiskManager.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\Object.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\Object.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/Object.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/Object.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\ObjectManager.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\ObjectManager.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/ObjectManager.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/ObjectManager.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\Replica.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\Replica.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/Replica.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/Replica.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\Request.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\Request.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/Request.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/Request.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\RequestManager.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\RequestManager.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/RequestManager.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/RequestManager.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\Scheduler.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\Scheduler.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/Scheduler.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/Scheduler.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\System.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\System.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/System.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/System.cpp.obj"
+},
+{
+  "directory": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/build",
+  "command": "D:\\SE\\MinGW\\ucrt64\\bin\\g++.exe  @CMakeFiles/code_craft.dir/includes_CXX.rsp -g -std=gnu++17 -o CMakeFiles\\code_craft.dir\\src\\main.cpp.obj -c C:\\Users\\Ifrost.LD\\Desktop\\HUAWEI\\2025-code-craft-preliminary\\disksnap\\src\\main.cpp",
+  "file": "C:/Users/Ifrost.LD/Desktop/HUAWEI/2025-code-craft-preliminary/disksnap/src/main.cpp",
+  "output": "CMakeFiles/code_craft.dir/src/main.cpp.obj"
+}
+]
