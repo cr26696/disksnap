@@ -12,7 +12,7 @@ class Request
     int size;
     //TODO 优化成位运算
     bool complete[6];
-    std::vector<int> needs;
+    // std::vector<int> needs;
     int prev_id;
 
     public:

@@ -30,7 +30,7 @@ class Disk
 {
 private:
     int head_s;                                               // 磁头上个操作 -1初始化 0刚jump过 >0
-    std::optional<std::pair<int, int>> blocks[MAX_DISK_SIZE]; // 对象id 对象的块序号
+    // std::optional<std::pair<int, int>> blocks[MAX_DISK_SIZE]; // 对象id 对象的块序号
     // std::unordered_map<int, std::unordered_set<Request *>> map_obj_request; // obj_id <-> 请求指针set
     std::list<std::pair<int, int>> free_blocks; // 空闲块的起始 结束地址
     Replica *replicas[MAX_OBJECT_NUM]={nullptr};
@@ -46,6 +46,7 @@ public:
     // std::unordered_map<int, Replica *> map_obj_replica;     // obj_id <-> 副本指针
     std::unordered_map<int, std::vector<int>> map_obj_part_addr; // obj_id <-> 各块存储地址
     // std::vector<int> completed_reqs; // 帧结束清空 记录完成请求的id
+    std::optional<std::pair<int, int>> blocks[MAX_DISK_SIZE];
 public:
     Disk(int V, int G, int id); // 构造函数
     void op_end();

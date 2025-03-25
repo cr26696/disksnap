@@ -105,12 +105,6 @@ void Disk::del_obj(Object &info)
     Replica *replica = replicas[object_id]; // 找到对应的副本
     vector<int> temp_free_units;                   // 存放空闲碎片
     vector<pair<int, int>> temp_free_blocks;       // 存放合并空闲碎片后的空闲区间
-    // for (Request *req : map_obj_request[object_id])
-    // { // 存储将取消的读取请求
-    //     canceled_reqs.insert(req->id);
-    //     job_count--;
-    // }
-    // map_obj_request[object_id].clear();
     /*----------开始释放磁盘----------*/
     for (int i=0;i<size;i++)
     {
@@ -194,13 +188,6 @@ void Disk::wrt_obj(Object &info)
                 it->first += size;
             }
             assert(current_write_point == size);
-            // 修改相关信息
-            // map_obj_replica[replica->id] = replica;
-            // if (map_obj_request.find(replica->id) == map_obj_request.end())
-            // {
-            //     unordered_set<Request *> relative_req_set;
-            //     map_obj_request[replica->id] = relative_req_set;
-            // }
             return;
         }
         /*--------进行分块暂存记录 以防无法连续存储---------*/
@@ -242,12 +229,6 @@ void Disk::wrt_obj(Object &info)
         }
     }
     assert(current_write_point == size);
-    // map_obj_replica[replica->id] = replica;
-    // if (map_obj_request.find(replica->id) == map_obj_request.end())
-    // {
-    //     unordered_set<Request *> relative_req_set;
-    //     map_obj_request[replica->id] = relative_req_set;
-    // }
     return;
 }
 std::pair<int, int> Disk::get_block(int addr)

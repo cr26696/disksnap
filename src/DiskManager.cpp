@@ -147,15 +147,7 @@ Disk &DiskManager::get_disk(int disk_id)
 {
     return disks[disk_id];
 }
-// vector<Disk *> DiskManager::get_disks(vector<int> disk_ids)
-// {
-//     vector<Disk *> ret_disks;
-//     for (int disk_id : disk_ids)
-//     {
-//         ret_disks.push_back(&disks[disk_id]);
-//     }
-//     return ret_disks;
-// }
+
 
 // 清除帧结束，调用清理
 void DiskManager::end()
@@ -163,8 +155,5 @@ void DiskManager::end()
     for (int i = 0; i < DiskNum; i++)
     {
         disks[i].end();
-        // job_threads[i].end();
     }
-    // completed_reqs.clear();
-    // canceled_reqs.clear();
 }
