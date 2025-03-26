@@ -44,23 +44,32 @@ Object &DiskManager::store_obj(int id, int size, int tag)
     {
         vector<Disk *> DiskOptions;
         DiskOptions.reserve(DiskNum);
+        // 过滤
         for (int j = 0; j < DiskNum; j++)
         {
             // 过滤掉空间不足、已使用的盘
-            if (disks[j].getFreeBlocks() < size || disks[j].get_replica(id) != nullptr)
+            if (disks[j].getAllSpace() < size || disks[j].get_replica(id) != nullptr)
                 continue;
             DiskOptions.push_back(&disks[j]);
         }
         // 接下来选出最合适存放的盘
-        // 先找空间最大的盘
-        int ideal_id = 0;
-        for (int j = 1;j< DiskOptions.size();j++){
-            if (DiskOptions[j]->getFreeBlocks() > DiskOptions[ideal_id]->getFreeBlocks())
-                ideal_id = j;
+        // 先找对应tag空间最大的盘
+        int idx_tag_space = 0; // tag区域空间最大的盘的下标
+        int idx_all_space = 0; // 全部空闲空间最大的盘的下标
+        for (int j = 1; j < DiskOptions.size(); j++)
+        {
+            if (DiskOptions[j]->getRegionSpace(tag) > DiskOptions[idx_tag_space]->getRegionSpace(tag))
+                idx_tag_space = j;
+            if (DiskOptions[j]->getAllSpace() > DiskOptions[idx_all_space]->getAllSpace())
+                idx_all_space = j;
         }
-        Disk *ideal_disk = DiskOptions[ideal_id];
-        ideal_disk->wrt_replica(object);
-        //TODO 返回写入信息
+
+        Disk *disk;
+        if (DiskOptions[idx_tag_space]->getRegionSpace(tag) < size)
+            disk = DiskOptions[idx_all_space];
+        else
+            disk = DiskOptions[idx_tag_space]; // 对应tag区域足够存放 直接存入
+        disk->wrt_replica(object);
     }
 }
 // 移除3个obj_id的副本 返回关联的请求取消数量

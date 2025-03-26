@@ -15,7 +15,7 @@ int DiskRegion::getFreeBlocks()
 }
 /// @brief 分配副本大小的空闲区域，调整muiltimap
 /// @param rep
-void DiskRegion::use_space(Replica &rep)
+void DiskRegion::use_space(Replica *rep)
 {	//OPT 不考虑存不下的情况
 	// TODO 存储
 	// 先尝试向大小刚好合适的区段存
@@ -25,7 +25,7 @@ void DiskRegion::use_space(Replica &rep)
 	// 实际要做的：删除或分割使用的区域
 }
 
-void DiskRegion::free_space(Replica &rep)
+void DiskRegion::free_space(Replica *rep)
 {
 	// TODO 删除
 

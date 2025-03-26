@@ -16,10 +16,10 @@ Disk::Disk(int volume, int G, int id, vector<double> &tag_ratio)
     elapsed = 0;
     phase_end = false;
     freeBlocks = 0;
-    
+
     for (int i = 0; i < tag_ratio.size(); i++)
     {
-        //TODO 创建region
+        // TODO 创建region
     }
 }
 
@@ -99,23 +99,53 @@ void Disk::op_end()
 }
 void Disk::wrt_replica(Object &info)
 {
-    //TODO 判断并选用Region 调用Region的use_space方法
-    //根据将相关block写入
+    // TODO 判断并选用Region 调用Region的use_space方法
+    // 根据将相关block写入
+    int tagSpace = getRegionSpace(info.tag);
+    if (tagSpace >= info.size)
+    {
+        // 直接存放
+    }
+    else
+    {
+        int region_idx = 0; // TODO 选择最适合的region
+        for (int i = 0; i < regions.size(); i++)
+        {
+            if (i == info.tag)
+                continue;
+            if (regions[i].free_blocks > regions[region_idx].free_blocks)
+                region_idx = i;
+        }
+        regions[region_idx].use_space(replicas[info.id]);
+    }
 }
 void Disk::del_replica(Object &info)
 {
-    //TODO 根据副本记录的存储位置，逐个调用Region的free_space方法
-    for(int i=0;i<info.size;i++){
-
+    assert(replicas[info.id] != nullptr);
+    int addr = replicas[info.id]->addr_part[0];
+    int idx = 0;
+    for (int i = 0; i < regions.size(); i++)
+    {
+        int start = regions[i].start;
+        int end = regions[i].end;
+        if (addr >= start && addr <= end)
+        {
+            idx = i;
+            break;
+        }
     }
-    // replicas[info.id]->addr_part
+    regions[idx].free_space(replicas[info.id]);
 }
-int Disk::getFreeBlocks()
+int Disk::getRegionSpace(int tag)
+{
+    return regions[tag].free_blocks;
+}
+int Disk::getAllSpace()
 {
     int free_blocks = 0;
     for (int i = 0; i < regions.size(); i++)
     {
-        free_blocks += regions[i].getFreeBlocks();
+        free_blocks += regions[i].free_blocks;
     }
     return free_blocks;
 }

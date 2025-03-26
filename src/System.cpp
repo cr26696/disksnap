@@ -19,7 +19,6 @@ System::System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int To
 
 void System::init()
 {
-    //TODO 读取标签 创建DiskManager对象 创建Disk 
     PeriodNum = (TimeStampNum - 1) / FRE_PER_SLICING + 1;
     fre_del.assign(TagNum, std::vector<int>(PeriodNum, 0));
     fre_write.assign(TagNum, std::vector<int>(PeriodNum, 0));
@@ -68,7 +67,7 @@ void System::run()
         timestamp_action();
         delete_action();
         write_action();
-        read_action(); // TODO 调用persuade_thread使用查找功能
+        read_action();
         phase_end();
     }
 }
@@ -92,8 +91,6 @@ void System::delete_action()
     DiskManager &DM = DiskManager::getInstance();
     int n_delete;
     static int _id[MAX_OBJECT_NUM];
-    // vector<Request> &requests = RequestManager::getInstance()->getRequests();
-    // vector<Object> &objects = ObjectManager::getInstance()->getObjects();
     scanf("%d", &n_delete);
     for (int i = 1; i <= n_delete; i++)
     {
@@ -116,12 +113,9 @@ void System::delete_action()
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
 void System::read_action()
 {
-    bool mute = false;
     Scheduler &SD = Scheduler::getInstance();
     int n_read;
     int request_id, object_id;
-    // vector<Request> &requests = RequestManager::getInstance()->getRequests();
-    // vector<Object> &objects = ObjectManager::getInstance()->getObjects();
     scanf("%d", &n_read);
     for (int i = 0; i < n_read; i++)
     {
@@ -129,11 +123,7 @@ void System::read_action()
         SD.add_request(request_id, object_id);
     }
     SD.excute_find();
-    // 找完后输出？
-    if (!mute)
-    {
-        SD.req_upload();
-    }
+    SD.req_upload();
     fflush(stdout);
 }
 
@@ -148,7 +138,7 @@ void System::write_action()
         scanf("%d%d%d", &id, &size, &tag);
         Object &obj_info = DM.store_obj(id, size, tag);
     }
-
+    // TODO 返回写入信息
     fflush(stdout);
 }
 
@@ -173,11 +163,10 @@ void System::label_oriented_storge()
     }
     assert(writes != 0);
 
-    //TODO 有必要按读的热值对标签存储顺序进行排序写入吗？
+    //OPT 有必要按读的热值对标签存储顺序进行排序写入吗？
     for (int i = 0; i < TagNum; i++){
-        tag_ratio[i] = (float)total_wri[i] / writes; //TODO 删写想等时分配一块默认子磁盘大小！
+        tag_ratio[i] = (float)total_wri[i] / writes;
         assert(tag_ratio[i] >= 0.0);
-        
         //记录不同标签存储起点
         // if (i == 0) 
         //     label_index[0] = 0;

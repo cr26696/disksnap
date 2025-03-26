@@ -16,6 +16,8 @@ struct Block
 };
 class DiskRegion
 {
+	friend class Disk;
+
 private:
 	int start;
 	int end;
@@ -24,8 +26,8 @@ private:
 	std::multimap<int, std::pair<int, int>> free_region; // 空间长度 查询 区域起始结束地址
 public:
 	DiskRegion(int start, int end);
-	int getFreeBlocks();
-	void use_space(Replica &rep);
-	void free_space(Replica &rep);
+	// int getFreeBlocks();
+	void use_space(Replica *rep);
+	void free_space(Replica *rep);
 };
 #endif
