@@ -32,7 +32,7 @@ public:
     static DiskManager &getInstance();
 
     Disk &get_disk(int disk_id);
-    Object &store_obj(int id, int size, int tag);
+    string store_obj(int id, int size, int tag);
     void remove_obj(int obj_id);
     void request_obj(int request_id, int object_id);
 

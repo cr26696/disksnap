@@ -102,7 +102,8 @@ void Disk::op_end()
     elapsed = tokenG;
     phase_end = true;
 }
-void Disk::wrt_replica(Object &info)
+//返回（空格+块写入地址）* size
+string Disk::wrt_replica(Object &info)
 {
     // 判断并选用Region，调用Region的use_space方法
     replicas[info.id] = new Replica(info);

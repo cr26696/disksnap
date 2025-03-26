@@ -36,10 +36,11 @@ DiskManager &DiskManager::getInstance()
 }
 // 存放时要输出存储信息： 对象id 各副本存放位置
 // 返回存储对象的信息
-Object &DiskManager::store_obj(int id, int size, int tag)
+string DiskManager::store_obj(int id, int size, int tag)
 {
     objects[id] = Object(id, size, tag);
     Object &object = objects[id];
+    string s = to_string(id) + "\n";//第一行 存储对象id + 换行
     for (int i = 0; i < REP_NUM; i++)
     {
         vector<Disk *> DiskOptions;
@@ -69,8 +70,9 @@ Object &DiskManager::store_obj(int id, int size, int tag)
             disk = DiskOptions[idx_all_space];
         else
             disk = DiskOptions[idx_tag_space]; // 对应tag区域足够存放 直接存入
-        disk->wrt_replica(object);
+        s += to_string(disk->id + 1) + disk->wrt_replica(object) + "\n";//盘号（注意从1开始) + 对象各块存储位置 + 换行
     }
+    return s;
 }
 // 移除3个obj_id的副本 返回关联的请求取消数量
 void DiskManager::remove_obj(int obj_id)
@@ -84,25 +86,6 @@ void DiskManager::remove_obj(int obj_id)
         t.rmv_req(info);
         disks[disk_id].del_replica(info);
     }
-}
-void DiskManager::request_obj(int request_id, int object_id)
-{
-    // // 选择最适合的disk放入任务
-    // // 找到能响应请求的disk
-    // //  DiskManager DM = DiskManager::getInstance();
-    // Object &obj = objects[object_id];
-    // int ideal_id = obj.diskid_replica[0];
-    // // 从第一个副本所在的磁盘线程开始比较
-    // for (int i = 1; i < REP_NUM; i++)
-    // {
-    //     int compare_id = obj.diskid_replica[i];
-    //     if (job_threads[compare_id].task_requests.size() < job_threads[ideal_id].task_requests.size())
-    //     {
-    //         ideal_id = i;
-    //     }
-    // }
-    // // 选好线程，调用添加任务函数
-    // job_threads[ideal_id].add_req(request_id, objects[object_id]);
 }
 
 Disk &DiskManager::get_disk(int disk_id)
