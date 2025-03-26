@@ -12,7 +12,6 @@ DiskManager::DiskManager(int DiskNum, int DiskVolume, int HeadToken, vector<doub
       HeadToken(HeadToken)
 {
     disks.reserve(DiskNum);
-
     for (int i = 0; i < DiskNum; i++)
     {
         disks.emplace_back(DiskVolume, HeadToken, i, tag_ratio); // emplace_back调用构造函数直接存入，不触发拷贝
@@ -35,38 +34,33 @@ DiskManager &DiskManager::getInstance()
     }
     return *instance;
 }
-
-// std::vector<Disk> &DiskManager::getDisks()
-// {
-//     return DiskManager::disks;
-// }
-
-void DiskManager::clean()
-{
-    // vector<Object> &objects = ObjectManager::getInstance()->getObjects();
-    // for (auto &obj : objects)
-    // {
-    //     for (int i = 1; i <= REP_NUM; i++)
-    //     {
-    //         if (obj.unit[i] == nullptr)
-    //             continue;
-    //         free(obj.unit[i]);
-    //         obj.unit[i] = nullptr;
-    //     }
-    // }
-}
 // 存放时要输出存储信息： 对象id 各副本存放位置
 // 返回存储对象的信息
 Object &DiskManager::store_obj(int id, int size, int tag)
 {
     objects[id] = Object(id, size, tag);
     Object &object = objects[id];
-    vector<int> Doptions; // disk options
-    // OPT numberOfFreeBlocks_计算结果存储
-    vector<int> spaces;
-    // 过滤空间不足存储的盘
-    for(int i=0;i<REP_NUM;i++){
-        
+    for (int i = 0; i < REP_NUM; i++)
+    {
+        vector<Disk *> DiskOptions;
+        DiskOptions.reserve(DiskNum);
+        for (int j = 0; j < DiskNum; j++)
+        {
+            // 过滤掉空间不足、已使用的盘
+            if (disks[j].getFreeBlocks() < size || disks[j].get_replica(id) != nullptr)
+                continue;
+            DiskOptions.push_back(&disks[j]);
+        }
+        // 接下来选出最合适存放的盘
+        // 先找空间最大的盘
+        int ideal_id = 0;
+        for (int j = 1;j< DiskOptions.size();j++){
+            if (DiskOptions[j]->getFreeBlocks() > DiskOptions[ideal_id]->getFreeBlocks())
+                ideal_id = j;
+        }
+        Disk *ideal_disk = DiskOptions[ideal_id];
+        ideal_disk->wrt_rep(object);
+        //TODO 返回写入信息
     }
 }
 // 移除3个obj_id的副本 返回关联的请求取消数量
@@ -79,9 +73,8 @@ void DiskManager::remove_obj(int obj_id)
         int disk_id = info.diskid_replica[i];
         PersuadeThread &t = SD.get_disk_thread(disk_id);
         t.rmv_req(info);
-        disks[disk_id].del_obj(info);
+        disks[disk_id].del_rep(info);
     }
-    // objects[obj_id]= //这里直接没清理的必要了
 }
 void DiskManager::request_obj(int request_id, int object_id)
 {

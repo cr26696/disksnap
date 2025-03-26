@@ -15,7 +15,6 @@ System::System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int To
       DiskVolume(DiskVolume),
       TokenG(TokenG)
 {
-
 }
 
 void System::init()
