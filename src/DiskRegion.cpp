@@ -9,10 +9,7 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end)
 	blocks[0].start = true;
 	blocks[size-1].end = true;
 }
-int DiskRegion::getFreeBlocks()
-{
-	return free_blocks;
-}
+
 /// @brief 分配副本大小的空闲区域，调整muiltimap
 /// @param rep
 void DiskRegion::use_space(Replica *rep)

@@ -17,10 +17,15 @@ Disk::Disk(int volume, int G, int id, vector<double> &tag_ratio)
     phase_end = false;
     freeBlocks = 0;
 
-    for (int i = 0; i < tag_ratio.size(); i++)
+    int region_start = 0;
+    for (int i = 0; i < tag_ratio.size() - 1; i++)
     {
-        // TODO 创建region
+        int region_size = static_cast<int>(tag_ratio[i] * volume);
+        int region_end = region_start + region_size - 1;
+        regions.push_back(DiskRegion(region_start, region_end));
+        region_start = region_end + 1;
     }
+    regions.push_back(DiskRegion(region_start, volume - 1));
 }
 
 // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
@@ -99,24 +104,23 @@ void Disk::op_end()
 }
 void Disk::wrt_replica(Object &info)
 {
-    // TODO 判断并选用Region 调用Region的use_space方法
-    // 根据将相关block写入
+    // 判断并选用Region，调用Region的use_space方法
+    replicas[info.id] = new Replica(info);
+    Replica *replica = replicas[info.id];
     int tagSpace = getRegionSpace(info.tag);
     if (tagSpace >= info.size)
-    {
-        // 直接存放
-    }
+        regions[info.tag].use_space(replica);
     else
     {
-        int region_idx = 0; // TODO 选择最适合的region
-        for (int i = 0; i < regions.size(); i++)
+        int region_idx = 0;
+        for (int i = 1; i < regions.size(); i++)
         {
             if (i == info.tag)
                 continue;
             if (regions[i].free_blocks > regions[region_idx].free_blocks)
                 region_idx = i;
         }
-        regions[region_idx].use_space(replicas[info.id]);
+        regions[region_idx].use_space(replica);
     }
 }
 void Disk::del_replica(Object &info)
