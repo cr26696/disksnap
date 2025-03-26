@@ -53,27 +53,6 @@ bool Scheduler::add_request(int req_id, int obj_id)
     return true; // 假设添加总是成功
 }
 
-bool Scheduler::del_request(int req_id)
-{
-    lock_guard<std::mutex> lock(mutex_);
-    vector<Request> &requests = RequestManager::getInstance()->getRequests();
-    int object_id = requests[req_id].object_id;
-    auto &req_list = active_requests[object_id];
-    if (active_requests.find(req_id) == active_requests.end())
-        return false;
-    auto it = std::find(req_list.begin(), req_list.end(), req_id);
-    if (it != req_list.end())
-    {
-        req_list.erase(it);
-        if (req_list.empty())
-        {
-            active_requests.erase(object_id);
-        }
-        return true;
-    }
-    return false;
-}
-
 vector<int> Scheduler::get_canceled_reqs_id()
 {
     int threadNum = job_threads.size();

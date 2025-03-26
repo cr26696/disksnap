@@ -5,9 +5,7 @@
 #include <unordered_map>
 #include <vector>
 #include "Disk.hpp"
-// 添加 执行 查找任务 记录与磁盘相关的任务信息
-// 创建于diskmanager
-// 存放对应磁盘的任务块，任务完成情况，实际的查找调用
+
 class PersuadeThread
 {
 private:
@@ -22,7 +20,7 @@ public:
 	std::vector<Request *> canceled_requests;
 	// 只会在执行查找后有内容
 	std::vector<Request *> complete_requests;
-	std::unordered_map<int, std::vector<Request*>> map_obj_requests; // obj_id -> (size, complete_parts)
+	std::unordered_map<int, std::vector<Request *>> map_obj_requests; // obj_id -> (size, complete_parts)
 
 public:
 	PersuadeThread(Disk *disk_ptr); // 构造函数传入disk指针

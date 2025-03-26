@@ -2,19 +2,9 @@
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>
-#include <vector>
-#include <string>
-#include <algorithm>
-#include <unordered_set>
-#include <iostream>
-#include <math.h>
 
-#include "System.hpp"
-#include "Scheduler.hpp"
 #include "MetaDefine.hpp"
-#include "RequestManager.hpp"
-#include "ObjectManager.hpp"
-
+#include "System.hpp"
 using namespace std;
 
 int main()

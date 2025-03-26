@@ -35,21 +35,21 @@ private:
     int elapsed;    // 当前时间片已用token数
     Replica *replicas[MAX_OBJECT_NUM]={nullptr};//已存储的所有副本
     std::optional<std::pair<int, int>> blocks[MAX_DISK_SIZE];//磁盘各存储单元
-    vector<DiskRegion> regions;//磁盘各区域
+    std::vector<DiskRegion> regions;//磁盘各区域
     int freeBlocks;
 public:
     const int id;
     const int volume;     // 磁盘容量
     const int tokenG;     // 当前时间片总可用token数
 public:
-    Disk(int V, int G, int id,vector<double>& tag_ratio); // 构造函数
+    Disk(int V, int G, int id,std::vector<double>& tag_ratio); // 构造函数
     void end();
     void op_end();
     bool operate(DiskOp op, int param);
 
     Replica *get_replica(int obj_id);
     void del_replica(Object &info);
-    string wrt_replica(Object &info);
+    std::string wrt_replica(Object &info);
     int getRegionSpace(int tag);
     int getAllSpace();
 };

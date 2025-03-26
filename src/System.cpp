@@ -2,12 +2,7 @@
 #include "System.hpp"
 
 using namespace std;
-
-RequestManager *requestManager = RequestManager::getInstance();
-ObjectManager *objectManager = ObjectManager::getInstance();
-
 // 构造函数参数对应T M N V G
-
 System::System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int TokenG)
     : TimeStampNum(TimeStampNum),
       TagNum(TagNum),
@@ -42,7 +37,7 @@ void System::init()
     {
         for (int j = 0; j < PeriodNum; j++)
         {
-            scanf("%d", & fre_read[i][j]);
+            scanf("%d", &fre_read[i][j]);
         }
     }
     printf("OK\n");
@@ -130,7 +125,7 @@ void System::read_action()
 void System::write_action()
 {
     DiskManager &DM = DiskManager::getInstance();
-    
+
     string write_info;
     int n_write;
     scanf("%d", &n_write);
@@ -138,8 +133,8 @@ void System::write_action()
     {
         int id, size, tag;
         scanf("%d%d%d", &id, &size, &tag);
-        write_info += to_string(id) + "\n";//第一行 存储对象id + 换行
-        write_info += DM.store_obj(id, size, tag);//2 3 4行 各磁盘存储对象信息
+        write_info += to_string(id) + "\n";        // 第一行 存储对象id + 换行
+        write_info += DM.store_obj(id, size, tag); // 2 3 4行 各磁盘存储对象信息
     }
     printf("%s", write_info.c_str());
     fflush(stdout);
@@ -147,7 +142,7 @@ void System::write_action()
 
 void System::label_oriented_storge()
 {
-    std::vector<int> total_del(TagNum, 0);  // 初始化结果向量
+    std::vector<int> total_del(TagNum, 0); // 初始化结果向量
     std::vector<int> total_wri(TagNum, 0);
     std::vector<int> total_read(TagNum, 0);
     std::vector<int> total_writes(TagNum, 0);
@@ -155,8 +150,10 @@ void System::label_oriented_storge()
     int writes = 0;
     tag_ratio.resize(TagNum, 0);
 
-    for (int i = 0; i < TagNum; i++) {
-        for (int j = 0; j < PeriodNum; j++) {
+    for (int i = 0; i < TagNum; i++)
+    {
+        for (int j = 0; j < PeriodNum; j++)
+        {
             total_del[i] += fre_del[i][j];
             total_wri[i] += fre_write[i][j];
             // total_read[i] += fre_read[i][j];
@@ -166,15 +163,16 @@ void System::label_oriented_storge()
     }
     assert(writes != 0);
 
-    //OPT 有必要按读的热值对标签存储顺序进行排序写入吗？
-    for (int i = 0; i < TagNum; i++){
+    // OPT 有必要按读的热值对标签存储顺序进行排序写入吗？
+    for (int i = 0; i < TagNum; i++)
+    {
         tag_ratio[i] = (float)total_wri[i] / writes;
         assert(tag_ratio[i] >= 0.0);
-        //记录不同标签存储起点
-        // if (i == 0) 
-        //     label_index[0] = 0;
-        // else
-        //     label_index[i] = label_index[i-1] + static_cast<int>(tag_ratio[i-1] * DiskVolume);
+        // 记录不同标签存储起点
+        //  if (i == 0)
+        //      label_index[0] = 0;
+        //  else
+        //      label_index[i] = label_index[i-1] + static_cast<int>(tag_ratio[i-1] * DiskVolume);
     }
 }
 
