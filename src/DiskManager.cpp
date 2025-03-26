@@ -6,7 +6,7 @@ using namespace std;
 
 DiskManager *DiskManager::instance = nullptr;
 
-DiskManager::DiskManager(int DiskNum, int DiskVolume, int HeadToken)
+DiskManager::DiskManager(int DiskNum, int DiskVolume, int HeadToken, vector<double> &tag_ratio)
     : DiskNum(DiskNum),
       DiskVolume(DiskVolume),
       HeadToken(HeadToken)
@@ -15,15 +15,15 @@ DiskManager::DiskManager(int DiskNum, int DiskVolume, int HeadToken)
 
     for (int i = 0; i < DiskNum; i++)
     {
-        disks.emplace_back(DiskVolume, HeadToken, i); // emplace_back调用构造函数直接存入，不触发拷贝
+        disks.emplace_back(DiskVolume, HeadToken, i, tag_ratio); // emplace_back调用构造函数直接存入，不触发拷贝
     }
 };
 
-DiskManager &DiskManager::getInstance(int DiskNum, int DiskVolume, int HeadToken)
+DiskManager &DiskManager::getInstance(int DiskNum, int DiskVolume, int HeadToken, vector<double> &tag_ratio)
 {
     if (instance == nullptr)
     {
-        instance = new DiskManager(DiskNum, DiskVolume, HeadToken); // 懒加载创建实例
+        instance = new DiskManager(DiskNum, DiskVolume, HeadToken, tag_ratio);
     }
     return *instance;
 }
@@ -65,49 +65,9 @@ Object &DiskManager::store_obj(int id, int size, int tag)
     // OPT numberOfFreeBlocks_计算结果存储
     vector<int> spaces;
     // 过滤空间不足存储的盘
-    for (int i = 0; i < DiskNum; i++)
-    {
-        spaces.push_back(disks[i].numberOfFreeBlocks_());
-        if (spaces[i] < size)
-        {
-            continue;
-        }
-        Doptions.push_back(i);
+    for(int i=0;i<REP_NUM;i++){
+        
     }
-    // 排序
-    sort(Doptions.begin(), Doptions.end(), [&](int a, int b)
-         { return spaces[a] > spaces[b]; });
-    // 假设排序后前三个盘空间最大
-    for (int i = 0; i < REP_NUM; i++)
-    {
-        int disk_id = Doptions[i];
-        object.diskid_replica[i] = disk_id;
-        // Replica *rep = new Replica{id, size, tag};
-        disks[disk_id].wrt_obj(object);
-    }
-    bool mute = false;
-    // 上报存储结果
-    if (!mute)
-    {
-        printf("%d\n", id);
-        for (int i = 0; i < REP_NUM; i++)
-        {
-            int disk_id = Doptions[i];
-            Disk &d = disks[disk_id];
-            printf("%d", disk_id + 1);
-            // 每个块的存储地址
-            vector<int> addrs = d.get_store_pos(id);
-            string s;
-            for (int k = 0; k < size; k++)
-            {
-                // s += " " + addrs[k];
-                printf(" %d", addrs[k] + 1);
-            }
-            // printf("%s\n", s.c_str());
-            printf("\n");
-        }
-    }
-    return object;
 }
 // 移除3个obj_id的副本 返回关联的请求取消数量
 void DiskManager::remove_obj(int obj_id)
@@ -147,7 +107,6 @@ Disk &DiskManager::get_disk(int disk_id)
 {
     return disks[disk_id];
 }
-
 
 // 清除帧结束，调用清理
 void DiskManager::end()

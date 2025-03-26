@@ -18,6 +18,36 @@ System::System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int To
     DiskManager::getInstance(DiskNum, DiskVolume, TokenG);
 }
 
+void System::init()
+{
+    //TODO 读取标签 创建DiskManager对象 创建Disk 
+    // for (int i = 1; i <= TagNum; i++)
+    // {
+    //     for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
+    //     {
+    //         scanf("%*d");
+    //     }
+    // }
+    // for (int i = 1; i <= TagNum; i++)
+    // {
+    //     for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
+    //     {
+    //         scanf("%*d");
+    //     }
+    // }
+    // for (int i = 1; i <= TagNum; i++)
+    // {
+    //     for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
+    //     {
+    //         scanf("%*d");
+    //     }
+    // }
+    printf("OK\n");
+    fflush(stdout);
+    vector<double> tag_percent;
+    DiskManager::getInstance(DiskNum, DiskVolume, TokenG, tag_percent);
+}
+
 // 获取单例实例的静态方法
 System &System::getInstance(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int TokenG)
 {
@@ -27,30 +57,7 @@ System &System::getInstance(int TimeStampNum, int TagNum, int DiskNum, int DiskV
 
 void System::run()
 {
-    for (int i = 1; i <= TagNum; i++)
-    {
-        for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
-        {
-            scanf("%*d");
-        }
-    }
-    for (int i = 1; i <= TagNum; i++)
-    {
-        for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
-        {
-            scanf("%*d");
-        }
-    }
-    for (int i = 1; i <= TagNum; i++)
-    {
-        for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
-        {
-            scanf("%*d");
-        }
-    }
-    printf("OK\n");
-    fflush(stdout);
-
+    init();
     for (int t = 1; t <= TimeStampNum + EXTRA_TIME; t++)
     {
         timestamp_action();

@@ -30,7 +30,7 @@ private:
     System(const System &) = delete;
     System &operator=(const System &) = delete;
     System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int TokenG);
-
+    void init();
     void update_time();
     void timestamp_action();
     void delete_action();

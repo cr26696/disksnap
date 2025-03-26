@@ -8,7 +8,7 @@
 #include "DiskManager.hpp"
 using namespace std;
 // 构造函数
-Disk::Disk(int volume, int G, int id)
+Disk::Disk(int volume, int G, int id,vector<double>& tag_ratio)
     : volume(volume), tokenG(G), id(id)
 {
     free_blocks.emplace_back(0, volume-1);
@@ -16,6 +16,10 @@ Disk::Disk(int volume, int G, int id)
     head_s = -1;
     elapsed = 0;
     phase_end = false;
+
+    for(int i = 0; i < tag_ratio.size(); i++){
+        
+    }
 }
 
 // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
