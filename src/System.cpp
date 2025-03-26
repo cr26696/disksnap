@@ -15,37 +15,43 @@ System::System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int To
       DiskVolume(DiskVolume),
       TokenG(TokenG)
 {
-    DiskManager::getInstance(DiskNum, DiskVolume, TokenG);
+
 }
 
 void System::init()
 {
     //TODO 读取标签 创建DiskManager对象 创建Disk 
-    // for (int i = 1; i <= TagNum; i++)
-    // {
-    //     for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
-    //     {
-    //         scanf("%*d");
-    //     }
-    // }
-    // for (int i = 1; i <= TagNum; i++)
-    // {
-    //     for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
-    //     {
-    //         scanf("%*d");
-    //     }
-    // }
-    // for (int i = 1; i <= TagNum; i++)
-    // {
-    //     for (int j = 1; j <= (TimeStampNum - 1) / FRE_PER_SLICING + 1; j++)
-    //     {
-    //         scanf("%*d");
-    //     }
-    // }
+    PeriodNum = (TimeStampNum - 1) / FRE_PER_SLICING + 1;
+    fre_del.assign(TagNum, std::vector<int>(PeriodNum, 0));
+    fre_write.assign(TagNum, std::vector<int>(PeriodNum, 0));
+    fre_read.assign(TagNum, std::vector<int>(PeriodNum, 0));
+
+    for (int i = 0; i < TagNum; i++)
+    {
+        for (int j = 0; j < PeriodNum; j++)
+        {
+            scanf("%d", &fre_del[i][j]);
+        }
+    }
+    for (int i = 0; i < TagNum; i++)
+    {
+        for (int j = 0; j < PeriodNum; j++)
+        {
+            scanf("%d", &fre_write[i][j]);
+        }
+    }
+    for (int i = 0; i < TagNum; i++)
+    {
+        for (int j = 0; j < PeriodNum; j++)
+        {
+            scanf("%d", & fre_read[i][j]);
+        }
+    }
     printf("OK\n");
     fflush(stdout);
-    vector<double> tag_percent;
-    DiskManager::getInstance(DiskNum, DiskVolume, TokenG, tag_percent);
+
+    label_oriented_storge();
+    DiskManager::getInstance(DiskNum, DiskVolume, TokenG, tag_ratio);
 }
 
 // 获取单例实例的静态方法
@@ -174,6 +180,40 @@ void System::write_action()
     }
 
     fflush(stdout);
+}
+
+void System::label_oriented_storge()
+{
+    std::vector<int> total_del(TagNum, 0);  // 初始化结果向量
+    std::vector<int> total_wri(TagNum, 0);
+    std::vector<int> total_read(TagNum, 0);
+    std::vector<int> total_writes(TagNum, 0);
+    // std::vector<float> ratio(TagNum, 0.0);
+    int writes = 0;
+    tag_ratio.resize(TagNum, 0);
+
+    for (int i = 0; i < TagNum; i++) {
+        for (int j = 0; j < PeriodNum; j++) {
+            total_del[i] += fre_del[i][j];
+            total_wri[i] += fre_write[i][j];
+            // total_read[i] += fre_read[i][j];
+        }
+        // total_writes[i] = total_wri[i] - total_del[i];
+        writes += total_wri[i];
+    }
+    assert(writes != 0);
+
+    //TODO 有必要按读的热值对标签存储顺序进行排序写入吗？
+    for (int i = 0; i < TagNum; i++){
+        tag_ratio[i] = (float)total_wri[i] / writes; //TODO 删写想等时分配一块默认子磁盘大小！
+        assert(tag_ratio[i] >= 0.0);
+        
+        //记录不同标签存储起点
+        // if (i == 0) 
+        //     label_index[0] = 0;
+        // else
+        //     label_index[i] = label_index[i-1] + static_cast<int>(tag_ratio[i-1] * DiskVolume);
+    }
 }
 
 void System::phase_end()
