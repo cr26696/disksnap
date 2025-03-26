@@ -48,8 +48,8 @@ public:
     bool operate(DiskOp op, int param);
 
     Replica *get_replica(int obj_id);
-    void del_rep(Object &info);
-    void wrt_rep(Object &info);
+    void del_replica(Object &info);
+    void wrt_replica(Object &info);
     int getFreeBlocks();
 };
 

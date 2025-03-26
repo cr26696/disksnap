@@ -147,35 +147,6 @@ void System::write_action()
         int id, size, tag;
         scanf("%d%d%d", &id, &size, &tag);
         Object &obj_info = DM.store_obj(id, size, tag);
-        // int *data = static_cast<int *>(malloc(sizeof(int) * (size + 1)));
-        // for (int k = 1; k <= size; k++)
-        // {
-        //     scanf("%d", &data[k]);
-        // }
-
-        // 选择3个磁盘存储副本
-        // vector<int> selected_disks = select_disks_for_replica(id);
-        // for (int j = 0; j < selected_disks.size(); j++)
-        // {
-        //     DiskManager::getInstance().store(id, id, size); // 直接调用diskManager的store方法
-        // }
-
-        // 现在diskmanager的store中已经上报过了
-        //  printf("%d\n", id);
-        //  // vector<Disk *> disks = DM.get_disks(DM.map_obj_diskid[id]);
-        //  for (int j = 0; j < 3; j++)
-        //  {
-        //      int disk_id = obj_info.diskid_replica[j];
-        //      Disk &disk = DM.get_disk(disk_id);
-        //      //磁盘ido
-        //      printf("%d", disk.id);
-        //      for (int k = 0; k < size; k++)
-        //      {
-
-        //         printf(" %d", disk.map_obj_part_addr[id][k]);
-        //     }
-        //     printf("\n");
-        // }
     }
 
     fflush(stdout);

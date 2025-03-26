@@ -59,7 +59,7 @@ Object &DiskManager::store_obj(int id, int size, int tag)
                 ideal_id = j;
         }
         Disk *ideal_disk = DiskOptions[ideal_id];
-        ideal_disk->wrt_rep(object);
+        ideal_disk->wrt_replica(object);
         //TODO 返回写入信息
     }
 }
@@ -73,7 +73,7 @@ void DiskManager::remove_obj(int obj_id)
         int disk_id = info.diskid_replica[i];
         PersuadeThread &t = SD.get_disk_thread(disk_id);
         t.rmv_req(info);
-        disks[disk_id].del_rep(info);
+        disks[disk_id].del_replica(info);
     }
 }
 void DiskManager::request_obj(int request_id, int object_id)

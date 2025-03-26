@@ -97,12 +97,12 @@ void Disk::op_end()
     elapsed = tokenG;
     phase_end = true;
 }
-void Disk::wrt_rep(Object &info)
+void Disk::wrt_replica(Object &info)
 {
     //TODO 判断并选用Region 调用Region的use_space方法
     //根据将相关block写入
 }
-void Disk::del_rep(Object &info)
+void Disk::del_replica(Object &info)
 {
     //TODO 根据副本记录的存储位置，逐个调用Region的free_space方法
     for(int i=0;i<info.size;i++){
