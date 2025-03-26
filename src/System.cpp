@@ -130,15 +130,18 @@ void System::read_action()
 void System::write_action()
 {
     DiskManager &DM = DiskManager::getInstance();
+    
+    string write_info;
     int n_write;
     scanf("%d", &n_write);
     for (int i = 0; i < n_write; i++)
     {
         int id, size, tag;
         scanf("%d%d%d", &id, &size, &tag);
-        Object &obj_info = DM.store_obj(id, size, tag);
+        write_info += to_string(id) + "\n";//第一行 存储对象id + 换行
+        write_info += DM.store_obj(id, size, tag);//2 3 4行 各磁盘存储对象信息
     }
-    // TODO 返回写入信息
+    printf("%s", write_info.c_str());
     fflush(stdout);
 }
 

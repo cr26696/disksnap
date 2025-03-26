@@ -25,7 +25,6 @@ Scheduler &Scheduler::getInstance()
 
 PersuadeThread &Scheduler::get_disk_thread(int thread_index)
 {
-    // TODO: insert return statement here
     return job_threads[thread_index];
 }
 
@@ -76,7 +75,7 @@ bool Scheduler::del_request(int req_id)
 }
 
 vector<int> Scheduler::get_canceled_reqs_id()
-{ // TODO 取消时 好像需要及时返回，每取消一个返回一个
+{
     int threadNum = job_threads.size();
     vector<int> vec;
     vec.reserve(3 * threadNum);

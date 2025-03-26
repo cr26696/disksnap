@@ -16,7 +16,6 @@
 #include "MetaDefine.hpp"
 #include "Request.hpp"
 #include "Replica.hpp"
-#include "Unit.hpp"
 #include "Object.hpp"
 #include "DiskRegion.hpp"
 enum DiskOp
@@ -28,6 +27,7 @@ enum DiskOp
 
 class Disk
 {
+    friend class PersuadeThread;
 private:
     int head_s;                                               // 磁头上个操作 -1初始化 0刚jump过 >0
     int head;       // 初始为0 如size == 8000 可能的值为0~7999
@@ -49,7 +49,7 @@ public:
 
     Replica *get_replica(int obj_id);
     void del_replica(Object &info);
-    void wrt_replica(Object &info);
+    string wrt_replica(Object &info);
     int getRegionSpace(int tag);
     int getAllSpace();
 };

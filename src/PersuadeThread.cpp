@@ -78,7 +78,7 @@ void PersuadeThread::excute_find()
             if (disk->operate(READ, 0))
             {
                 int obj_id, part;
-                std::tie(obj_id, part) = disk->get_block(*it_addr);
+                std::tie(obj_id, part) = disk->blocks(*it_addr);
 
                 /* 这个对象有请求 */
                 // if(map_obj_requests.find(obj_id) != map_obj_requests.end())
@@ -88,7 +88,7 @@ void PersuadeThread::excute_find()
                     for(auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                     {
                         (*req)->complete[part] = true;
-                        if ((*req)->is_complete())//TODO 改为全部找完进行判定上报
+                        if ((*req)->is_complete())//OPT 改为全部找完进行判定上报
                         {
                             complete_requests.push_back(*req);
                             job_count--;
