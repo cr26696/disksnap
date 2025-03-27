@@ -6,20 +6,14 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end), free_blocks
 	int size = end - start + 1;
 	int temp_key = free_blocks_size > 5 ? 6 : free_blocks_size;
 	free_blocks[temp_key].insert(make_pair(start, end)); // 初始化第一个区域
-	blocks.resize(size);
-	blocks[0].start = true;
-	blocks[size - 1].end = true;
 }
 
 /// @brief 分配副本大小的空闲区域，调整muiltimap
 // TODO 存储
-// 先尝试向大小刚好合适的区段存
-// 如果没有这样的区段，查找分割更大的区段存
-// 如果没有更大的区段，分段存储
-// 实际要做的：删除或分割使用的区域
 /// @param rep
 vector<int> DiskRegion::use_space(Replica *rep)
-{
+{	
+	vector<int> result;
 	int rep_size = rep->info.size;
 	assert(rep_size <= free_blocks_size); // 保证有足够的空间存储
 	int whole_write_key = rep_size;
@@ -47,21 +41,13 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		/* 只迭代一次 对第一个空闲块进行存储 */
 		for (auto area = it->second.begin(); area != it->second.end();)
 		{
-			/* 进行blocks记录 */
-			for (int i = 0; i < rep_size; i++)
-			{
-				assert(blocks[area->first + i].used == false); // 保证空闲块未被使用
-				blocks[area->first + i].used = true;
-				blocks[area->first + i].obj_id = rep->info.id;
-				blocks[area->first + i].part = i;
-				rep->addr_part[i] = area->first + i;
-			}
-
-			// TODO 进行blocks头尾标记
-
 			/* 在可填满空闲块中填充 需要删除该空闲块 */
 			if (whole_write_key != MAX_FREE_BLOCK_KEY)
 			{
+				for(int i = 0; i < rep_size; i++)
+				{
+					result.push_back(area->first + i);// 返回修改的地址
+				}
 				free_blocks[whole_write_key].erase(area); // 删除该空闲块
 				if (free_blocks[whole_write_key].empty())
 				{
@@ -71,6 +57,10 @@ vector<int> DiskRegion::use_space(Replica *rep)
 			/* 在最大号的空闲块中填充 需要修改该空闲块 */
 			else
 			{
+				for(int i = 0; i < rep_size; i++)
+				{
+					result.push_back(area->first + i);// 返回修改的地址
+				}
 				pair<int, int> new_area = make_pair(area->first + rep_size, area->second);
 				int remain_area_size = new_area.second - new_area.first + 1;
 				if (remain_area_size < MAX_FREE_BLOCK_KEY)
@@ -117,13 +107,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		{
 			int temp_size = temp_areas[i].second - temp_areas[i].first + 1;
 			pair<int, int> temp_area = temp_areas[i];
-			for (int j = 0; j < temp_size; j++)
+			for(int j = 0; j < temp_size; j++)
 			{
-				assert(blocks[temp_area.first + j].used == false); // 保证空闲块未被使用
-				blocks[temp_area.first + j].used = true;
-				blocks[temp_area.first + j].obj_id = rep->info.id;
-				blocks[temp_area.first + j].part = rep_size - reamain_size;
-				reamain_size--;
+				result.push_back(temp_area.first + j);// 返回暂存方法里的地址
 			}
 			free_blocks[temp_size].erase(temp_area);
 			if (free_blocks[temp_size].empty())
@@ -133,12 +119,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		}
 		/* 最后一块单独处理 */
 		pair<int, int> temp_area = temp_areas.back();
-		for (int i = 0; i < reamain_size; i++)
+		for(int j = 0; j < reamain_size; j++)
 		{
-			assert(blocks[temp_area.first + i].used == false); // 保证空闲块未被使用
-			blocks[temp_area.first + i].used = true;
-			blocks[temp_area.first + i].obj_id = rep->info.id;
-			blocks[temp_area.first + i].part = rep_size - reamain_size + i;
+			result.push_back(temp_area.first + j);// 返回最后一块的地址
 		}
 		pair<int, int> new_area = make_pair(temp_area.first + reamain_size, temp_area.second);
 		free_blocks[temp_area.second - temp_area.first + 1].erase(temp_area);
@@ -149,20 +132,11 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		free_blocks[new_area.second - new_area.first + 1].insert(new_area);
 		free_blocks_size -= rep_size;
 	}
-	return;
+	return result;
 }
 
 void DiskRegion::free_space(Replica *rep)
 {
-	for (int i = 0; i < rep->info.size; i++)
-	{
-		int addr = rep->addr_part[i];
-		assert(blocks[addr].used == true); // 保证空闲块被使用
-		blocks[addr].used = false;
-		blocks[addr].obj_id = -1;
-		blocks[addr].part = -1;
-		free_blocks[1].insert(make_pair(addr, addr));
-	}
 	for (auto it_map = free_blocks.begin(); it_map != free_blocks.end(); it_map++)
 	{
 		for (auto it_set = it_map->second.begin(); it_set != it_map->second.end();)
@@ -189,6 +163,7 @@ void DiskRegion::free_space(Replica *rep)
 			}
 		}
 	}
+	free_blocks_size += rep->info.size;
 	/* TODO是否需要删除空闲块为空的种类？*/
 	for (auto it_map = free_blocks.begin(); it_map != free_blocks.end();)
 	{
