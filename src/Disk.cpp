@@ -57,6 +57,13 @@ bool Disk::operate(DiskOp op, int param)
         {
             if (elapsed + param > tokenG)
             {
+                param = tokenG - elapsed;
+                string s(param, 'p');
+                upload_info.append(s);
+                head += param;
+                head = head % volume;
+                head_s = 1;
+                elapsed += param;
                 phase_end = true;
                 return false;
             }
