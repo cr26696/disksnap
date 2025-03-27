@@ -188,8 +188,8 @@ int Disk::get_regionIndix(int addr)
 {
     for (int i = 0; i < regions.size(); i++)
     {
-        int start = regions[i].start;
-        int end = regions[i].end;
+        int start = regions[i].region_start;
+        int end = regions[i].region_end;
         if (addr >= start && addr <= end)
         {
             return i;

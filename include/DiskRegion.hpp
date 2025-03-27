@@ -40,8 +40,8 @@ class DiskRegion
 	friend class Disk;
 
 private:
-	int start;
-	int end;
+	int region_start;
+	int region_end;
 	int free_blocks_size; // 持续维护，记录所有空闲块
 	std::list<std::shared_ptr<ListNode>> SectionList;//按地址存储空闲区段
     std::unordered_set<std::shared_ptr<ListNode>, ListNodeHash> SectionSet[MAX_FREE_BLOCK_KEY + 1];//大于5的区段都存在6中，其他按大小存储
@@ -50,5 +50,8 @@ public:
 	std::vector<int> use_space(Replica *rep);
 	void free_space(Replica *rep);
 	int get_write_mode_flag(int size);
+    void check_section_list();
+    void check_section_list_error();
+    void check_size_leagal(int flag);
 };
 #endif
