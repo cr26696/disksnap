@@ -18,7 +18,7 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end), free_blocks
 // 如果没有更大的区段，分段存储
 // 实际要做的：删除或分割使用的区域
 /// @param rep
-void DiskRegion::use_space(Replica *rep)
+vector<int> DiskRegion::use_space(Replica *rep)
 {
 	int rep_size = rep->info.size;
 	assert(rep_size <= free_blocks_size); // 保证有足够的空间存储
@@ -54,6 +54,7 @@ void DiskRegion::use_space(Replica *rep)
 				blocks[area->first + i].used = true;
 				blocks[area->first + i].obj_id = rep->info.id;
 				blocks[area->first + i].part = i;
+				rep->addr_part[i] = area->first + i;
 			}
 
 			// TODO 进行blocks头尾标记

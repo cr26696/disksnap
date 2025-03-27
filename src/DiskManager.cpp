@@ -40,7 +40,7 @@ string DiskManager::store_obj(int id, int size, int tag)
 {
     objects[id] = Object(id, size, tag);
     Object &object = objects[id];
-    string s = to_string(id) + "\n";//第一行 存储对象id + 换行
+    string s;
     for (int i = 0; i < REP_NUM; i++)
     {
         vector<Disk *> DiskOptions;
@@ -70,7 +70,7 @@ string DiskManager::store_obj(int id, int size, int tag)
             disk = DiskOptions[idx_all_space];
         else
             disk = DiskOptions[idx_tag_space]; // 对应tag区域足够存放 直接存入
-        s += to_string(disk->id + 1) + disk->wrt_replica(object) + "\n";//盘号（注意从1开始) + 对象各块存储位置 + 换行
+        s += disk->wrt_replica(object) + "\n";//盘号（注意从1开始) + 对象各块存储位置 + 换行
     }
     return s;
 }

@@ -108,21 +108,26 @@ string Disk::wrt_replica(Object &info)
     // 判断并选用Region，调用Region的use_space方法
     replicas[info.id] = new Replica(info);
     Replica *replica = replicas[info.id];
-    int tagSpace = getRegionSpace(info.tag);
-    if (tagSpace >= info.size)
-        regions[info.tag].use_space(replica);
+    int idx_tag = info.tag -1; // tag从1开始 作索引使用时-1
+    if (getRegionSpace(idx_tag) >= info.size)
+        regions[idx_tag].use_space(replica);
     else
     {
         int region_idx = 0;
         for (int i = 1; i < regions.size(); i++)
         {
-            if (i == info.tag)
+            if (i == idx_tag)
                 continue;
             if (regions[i].free_blocks_size > regions[region_idx].free_blocks_size)
                 region_idx = i;
         }
         regions[region_idx].use_space(replica);
     }
+    string s = to_string(id+1);//盘号（注意从1开始) + 对象各块存储位置
+    for(int i = 0; i < info.size; i++){
+        s += " " + to_string(replica->addr_part[i]);
+    }
+    return s;
 }
 void Disk::del_replica(Object &info)
 {
@@ -143,7 +148,7 @@ void Disk::del_replica(Object &info)
 }
 int Disk::getRegionSpace(int tag)
 {
-    return regions[tag].free_blocks_size;
+    return regions[tag-1].free_blocks_size;
 }
 int Disk::getAllSpace()
 {
