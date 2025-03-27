@@ -16,13 +16,15 @@ Disk::Disk(int volume, int G, int id, vector<double> &tag_ratio)
     elapsed = 0;
     phase_end = false;
     freeBlocks = 0;
-
+    //构造磁盘tag区域
     int region_start = 0;
     for (int i = 0; i < tag_ratio.size() - 1; i++)
     {
         int region_size = static_cast<int>(tag_ratio[i] * volume);
         int region_end = region_start + region_size - 1;
         regions.push_back(DiskRegion(region_start, region_end));
+        blocks[region_start].start = true;
+        blocks[region_end].end = true;
         region_start = region_end + 1;
     }
     regions.push_back(DiskRegion(region_start, volume - 1));
@@ -108,9 +110,10 @@ string Disk::wrt_replica(Object &info)
     // 判断并选用Region，调用Region的use_space方法
     replicas[info.id] = new Replica(info);
     Replica *replica = replicas[info.id];
+    vector<int> addrs;
     int idx_tag = info.tag -1; // tag从1开始 作索引使用时-1
     if (getRegionSpace(idx_tag) >= info.size)
-        regions[idx_tag].use_space(replica);
+        addrs = regions[idx_tag].use_space(replica);
     else
     {
         int region_idx = 0;
@@ -121,30 +124,28 @@ string Disk::wrt_replica(Object &info)
             if (regions[i].free_blocks_size > regions[region_idx].free_blocks_size)
                 region_idx = i;
         }
-        regions[region_idx].use_space(replica);
+        addrs = regions[region_idx].use_space(replica);
     }
     string s = to_string(id+1);//盘号（注意从1开始) + 对象各块存储位置
     for(int i = 0; i < info.size; i++){
-        s += " " + to_string(replica->addr_part[i]);
+        int addr = addrs[i];
+        blocks[addr].used = true;
+        blocks[addr].obj_id = info.id;
+        blocks[addr].part = i;
+        replica->addr_part[i] = addr;
+        s += " " + to_string(addr+1);//空格 + 块存入地址（从1开始）
     }
     return s;
 }
 void Disk::del_replica(Object &info)
 {
     assert(replicas[info.id] != nullptr);
-    int addr = replicas[info.id]->addr_part[0];
-    int idx = 0;
-    for (int i = 0; i < regions.size(); i++)
-    {
-        int start = regions[i].start;
-        int end = regions[i].end;
-        if (addr >= start && addr <= end)
-        {
-            idx = i;
-            break;
-        }
-    }
-    regions[idx].free_space(replicas[info.id]);
+    Replica *replica = replicas[info.id];
+    int part1_addr = replicas[info.id]->addr_part[0];
+    int idx_region = get_regionIndix(part1_addr);
+    replicas[info.id] = nullptr;
+    regions[idx_region].free_space(replica);
+    delete(replica);
 }
 int Disk::getRegionSpace(int tag)
 {

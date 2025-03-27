@@ -71,6 +71,7 @@ string DiskManager::store_obj(int id, int size, int tag)
         else
             disk = DiskOptions[idx_tag_space]; // 对应tag区域足够存放 直接存入
         s += disk->wrt_replica(object) + "\n";//盘号（注意从1开始) + 对象各块存储位置 + 换行
+        object.diskid_replica[i] = disk->id;
     }
     return s;
 }

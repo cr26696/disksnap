@@ -137,6 +137,7 @@ vector<int> DiskRegion::use_space(Replica *rep)
 
 void DiskRegion::free_space(Replica *rep)
 {
+	assert(rep!=nullptr);
 	for (auto it_map = free_blocks.begin(); it_map != free_blocks.end(); it_map++)
 	{
 		for (auto it_set = it_map->second.begin(); it_set != it_map->second.end();)

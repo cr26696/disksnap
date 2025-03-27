@@ -27,7 +27,14 @@ enum DiskOp
     JUMP,
     READ,
 };
-
+struct Block
+{
+	int obj_id = -1; // 对象id
+	int part = -1;	 // 对象副本的第几块
+	bool start = false;
+	bool end = false;
+	bool used = false;
+};
 class Disk
 {
     friend class PersuadeThread;
@@ -37,7 +44,7 @@ private:
     bool phase_end; // 是否结束当前阶段
     int elapsed;    // 当前时间片已用token数
     Replica *replicas[MAX_OBJECT_NUM]={nullptr};//已存储的所有副本
-    std::optional<std::pair<int, int>> blocks[MAX_DISK_SIZE];//磁盘各存储单元
+    Block blocks[MAX_DISK_SIZE];//磁盘各存储单元
     std::vector<DiskRegion> regions;//磁盘各区域
     int freeBlocks;
 public:

@@ -77,9 +77,9 @@ void PersuadeThread::excute_find()
         {
             if (disk->operate(READ, 0))
             {
-                int reg_idx = disk->get_regionIndix(*it_addr);
-                int obj_id = disk->regions[reg_idx].blocks[*it_addr].obj_id;
-                int part = disk->regions[reg_idx].blocks[*it_addr].part;
+                // int reg_idx = disk->get_regionIndix(*it_addr);
+                int obj_id = disk->blocks[*it_addr].obj_id;
+                int part = disk->blocks[*it_addr].part;
                 /* 这个对象有请求 */
                 // if(map_obj_requests.find(obj_id) != map_obj_requests.end())
                 // {
