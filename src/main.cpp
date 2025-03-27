@@ -1,4 +1,3 @@
-// main.cpp
 #include <cstdio>
 #include <cassert>
 #include <cstdlib>

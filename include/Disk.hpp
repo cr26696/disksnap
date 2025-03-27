@@ -1,4 +1,3 @@
-// Disk.hpp
 #ifndef DISK_HPP
 #define DISK_HPP
 
@@ -18,6 +17,10 @@
 #include "Replica.hpp"
 #include "Object.hpp"
 #include "DiskRegion.hpp"
+
+struct DiskRegion;
+
+
 enum DiskOp
 {
     PASS,
@@ -52,6 +55,7 @@ public:
     std::string wrt_replica(Object &info);
     int getRegionSpace(int tag);
     int getAllSpace();
+    int get_regionIndix(int addr);
 };
 
 #endif // DISK_HPP

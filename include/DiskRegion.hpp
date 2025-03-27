@@ -25,7 +25,7 @@ private:
 	int start;
 	int end;
 	int free_blocks_size; // 持续维护，记录所有空闲块
-	std::vector<Block> blocks;
+	
 	struct PairCompare {
 		template <typename T1, typename T2>
 		bool operator()(const std::pair<T1, T2>& lhs, const std::pair<T1, T2>& rhs) const {
@@ -34,6 +34,7 @@ private:
 	};
 	std::unordered_map<int, std::set<std::pair<int, int>, PairCompare>> free_blocks; // 空间长度 查询 区域起始结束地址
 public:
+	std::vector<Block> blocks;
 	DiskRegion(int start, int end);
 	// int getFreeBlocks();
 	void use_space(Replica *rep);

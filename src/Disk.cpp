@@ -118,7 +118,7 @@ string Disk::wrt_replica(Object &info)
         {
             if (i == info.tag)
                 continue;
-            if (regions[i].free_blocks > regions[region_idx].free_blocks)
+            if (regions[i].free_blocks_size > regions[region_idx].free_blocks_size)
                 region_idx = i;
         }
         regions[region_idx].use_space(replica);
@@ -143,14 +143,14 @@ void Disk::del_replica(Object &info)
 }
 int Disk::getRegionSpace(int tag)
 {
-    return regions[tag].free_blocks;
+    return regions[tag].free_blocks_size;
 }
 int Disk::getAllSpace()
 {
     int free_blocks = 0;
     for (int i = 0; i < regions.size(); i++)
     {
-        free_blocks += regions[i].free_blocks;
+        free_blocks += regions[i].free_blocks_size;
     }
     return free_blocks;
 }
@@ -164,4 +164,19 @@ void Disk::end()
 {
     elapsed = 0;
     phase_end = false;
+}
+
+int Disk::get_regionIndix(int addr)
+{
+    for (int i = 0; i < regions.size(); i++)
+    {
+        int start = regions[i].start;
+        int end = regions[i].end;
+        if (addr >= start && addr <= end)
+        {
+            return i;
+        }
+    }
+    assert(true);// should not reach here
+    return -1;
 }
