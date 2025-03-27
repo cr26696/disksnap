@@ -28,7 +28,7 @@ public:
     std::vector<int> get_canceled_reqs_id();
     std::vector<int> get_complete_reqs_id();
     void excute_find();
-    void req_upload();
+    std::string getUploadInfo();
     void end();
 };
 

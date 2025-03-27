@@ -104,7 +104,7 @@ void System::delete_action()
     {
         upload_info += to_string(canceled_reqs_id[i]) + "\n";
     }
-    // printf("%s", upload_info.c_str());
+    upload(upload_info);
     fflush(stdout);
 }
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
@@ -121,8 +121,8 @@ void System::read_action()
         SD.add_request(request_id, object_id);
     }
     SD.excute_find();
-    // DM.oprate_upload();
-    // SD.req_upload();
+    upload(DM.getUploadInfo());
+    upload(SD.getUploadInfo());
     fflush(stdout);
 }
 
@@ -140,7 +140,7 @@ void System::write_action()
         write_info += to_string(id) + "\n";        // 第一行 存储对象id + 换行
         write_info += DM.store_obj(id, size, tag); // 2 3 4行 各磁盘存储对象信息
     }
-    // printf("%s", write_info.c_str());
+    upload(write_info);
     fflush(stdout);
 }
 
@@ -178,6 +178,12 @@ void System::label_oriented_storge()
         //  else
         //      label_index[i] = label_index[i-1] + static_cast<int>(tag_ratio[i-1] * DiskVolume);
     }
+}
+
+void System::upload(string s)
+{
+    if (doUpload)
+        printf("%s", s.c_str());
 }
 
 void System::phase_end()

@@ -35,7 +35,7 @@ public:
     std::string store_obj(int id, int size, int tag);
     void remove_obj(int obj_id);
     void request_obj(int request_id, int object_id);
-    void oprate_upload();
+    std::string getUploadInfo();
     void end();
 };
 
