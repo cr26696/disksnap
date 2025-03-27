@@ -6,17 +6,28 @@
 #include <map>
 #include <set>
 #include <unordered_map>
+#include <unordered_set>
+#include <list>
+#include <memory>
 #include "Object.hpp"
 #include "Disk.hpp"
 
-// struct Block
-// {
-// 	int obj_id = -1; // 对象id
-// 	int part = -1;	 // 对象副本的第几块
-// 	bool start = false;
-// 	bool end = false;
-// 	bool used = false;
-// };
+struct ListNode {
+    int start;
+    int end;
+    ListNode(int s, int e) : start(s), end(e) {}
+
+    // 为了在 unordered_set 中使用，定义相等比较操作符
+    bool operator==(const ListNode& other) const {
+        return start == other.start && end == other.end;
+    }
+};
+// 定义哈希函数
+struct ListNodeHash {
+    std::size_t operator()(const std::shared_ptr<ListNode>& node) const {
+        return std::hash<int>()(node->start) ^ std::hash<int>()(node->end);
+    }
+};
 class DiskRegion
 {
 	friend class Disk;
@@ -25,18 +36,10 @@ private:
 	int start;
 	int end;
 	int free_blocks_size; // 持续维护，记录所有空闲块
-	
-	struct PairCompare {
-		template <typename T1, typename T2>
-		bool operator()(const std::pair<T1, T2>& lhs, const std::pair<T1, T2>& rhs) const {
-			return lhs.first < rhs.first;  // 仅比较 first 成员
-		}
-	};
-	std::unordered_map<int, std::set<std::pair<int, int>, PairCompare>> free_blocks; // 空间长度 查询 区域起始结束地址
+	std::list<std::shared_ptr<ListNode>> SectionList;//按地址存储空闲区段
+    std::unordered_set<std::shared_ptr<ListNode>, ListNodeHash> SectionSet[7];//大于5的区段都存在6中，其他按大小存储
 public:
-	// std::vector<Block> blocks;
 	DiskRegion(int start, int end);
-	// int getFreeBlocks();
 	std::vector<int> use_space(Replica *rep);
 	void free_space(Replica *rep);
 };

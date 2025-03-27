@@ -5,7 +5,10 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end), free_blocks
 {
 	int size = end - start + 1;
 	int temp_key = free_blocks_size > 5 ? 6 : free_blocks_size;
-	free_blocks[temp_key].insert(make_pair(start, end)); // 初始化第一个区域
+	auto node = make_shared<ListNode>(start, end);
+	// 初始化第一个区域
+	SectionList.push_back(node); 
+	SectionSet[temp_key].insert(node);
 }
 
 /// @brief 分配副本大小的空闲区域，调整muiltimap
@@ -137,7 +140,29 @@ vector<int> DiskRegion::use_space(Replica *rep)
 
 void DiskRegion::free_space(Replica *rep)
 {
+	// 新增释放的空间
+	// 尝试合并相邻块
+	// 根据合成成功与否 删除或添加块
+	// 将链表的操作同步到set中
+	// 更新空闲块数量的记录
 	assert(rep!=nullptr);
+	int progress = 0;
+	vector<pair<int, int>> to_insert_sections;
+	int addr = rep->addr_part[0];
+	int start  = addr;
+	int end = addr;
+	for(size_t i = 1;i<rep->info.size;i++)
+		addr = rep->addr_part[i];
+		if(addr == end + 1){
+			end = addr;
+		}else{
+			auto node = make_shared<ListNode>(start, end);
+			SectionList.push_back(node);
+			SectionSet[1].insert(node);
+			start = addr;
+			end = addr;
+		}
+	}
 	for (auto it_map = free_blocks.begin(); it_map != free_blocks.end(); it_map++)
 	{
 		for (auto it_set = it_map->second.begin(); it_set != it_map->second.end();)
