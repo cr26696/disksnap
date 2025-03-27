@@ -1,8 +1,11 @@
 #ifndef DISKREGION_HPP
 #define DISKREGION_HPP
 
+#define MAX_FREE_BLOCK_KEY 6
 #include <vector>
 #include <map>
+#include <set>
+#include <unordered_map>
 #include "Object.hpp"
 #include "Disk.hpp"
 
@@ -21,9 +24,15 @@ class DiskRegion
 private:
 	int start;
 	int end;
-	int free_blocks; // 持续维护，记录所有空闲块
+	int free_blocks_size; // 持续维护，记录所有空闲块
 	std::vector<Block> blocks;
-	std::multimap<int, std::pair<int, int>> free_region; // 空间长度 查询 区域起始结束地址
+	struct PairCompare {
+		template <typename T1, typename T2>
+		bool operator()(const std::pair<T1, T2>& lhs, const std::pair<T1, T2>& rhs) const {
+			return lhs.first < rhs.first;  // 仅比较 first 成员
+		}
+	};
+	std::unordered_map<int, std::set<std::pair<int, int>, PairCompare>> free_blocks; // 空间长度 查询 区域起始结束地址
 public:
 	DiskRegion(int start, int end);
 	// int getFreeBlocks();
