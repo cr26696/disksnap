@@ -122,7 +122,7 @@ string Disk::wrt_replica(Object &info)
     Replica *replica = replicas[info.id];
     vector<int> addrs;
     int idx_tag = info.tag -1; // tag从1开始 作索引使用时-1
-    if (getRegionSpace(idx_tag) >= info.size)
+    if (getRegionSpace(info.tag) >= info.size)
         addrs = regions[idx_tag].use_space(replica);
     else
     {
@@ -157,6 +157,7 @@ void Disk::del_replica(Object &info)
     regions[idx_region].free_space(replica);
     delete(replica);
 }
+//!! 这里一定要填tag 从1开始的tag 而不是转换的索引
 int Disk::getRegionSpace(int tag)
 {
     return regions[tag-1].free_blocks_size;
