@@ -21,6 +21,9 @@ struct ListNode {
     bool operator==(const ListNode& other) const {
         return start == other.start && end == other.end;
     }
+	bool operator<(const ListNode& other) const {
+        return start < other.start;
+    }
 };
 // 定义哈希函数
 struct ListNodeHash {

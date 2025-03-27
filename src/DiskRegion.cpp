@@ -7,7 +7,7 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end), free_blocks
 	int temp_key = free_blocks_size > 5 ? 6 : free_blocks_size;
 	auto node = make_shared<ListNode>(start, end);
 	// 初始化第一个区域
-	SectionList.push_back(node); 
+	SectionList.push_back(node);
 	SectionSet[temp_key].insert(node);
 }
 
@@ -15,7 +15,7 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end), free_blocks
 // TODO 存储
 /// @param rep
 vector<int> DiskRegion::use_space(Replica *rep)
-{	
+{
 	vector<int> result;
 	int rep_size = rep->info.size;
 	assert(rep_size <= free_blocks_size); // 保证有足够的空间存储
@@ -47,9 +47,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 			/* 在可填满空闲块中填充 需要删除该空闲块 */
 			if (whole_write_key != MAX_FREE_BLOCK_KEY)
 			{
-				for(int i = 0; i < rep_size; i++)
+				for (int i = 0; i < rep_size; i++)
 				{
-					result.push_back(area->first + i);// 返回修改的地址
+					result.push_back(area->first + i); // 返回修改的地址
 				}
 				free_blocks[whole_write_key].erase(area); // 删除该空闲块
 				if (free_blocks[whole_write_key].empty())
@@ -60,9 +60,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 			/* 在最大号的空闲块中填充 需要修改该空闲块 */
 			else
 			{
-				for(int i = 0; i < rep_size; i++)
+				for (int i = 0; i < rep_size; i++)
 				{
-					result.push_back(area->first + i);// 返回修改的地址
+					result.push_back(area->first + i); // 返回修改的地址
 				}
 				pair<int, int> new_area = make_pair(area->first + rep_size, area->second);
 				int remain_area_size = new_area.second - new_area.first + 1;
@@ -110,9 +110,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		{
 			int temp_size = temp_areas[i].second - temp_areas[i].first + 1;
 			pair<int, int> temp_area = temp_areas[i];
-			for(int j = 0; j < temp_size; j++)
+			for (int j = 0; j < temp_size; j++)
 			{
-				result.push_back(temp_area.first + j);// 返回暂存方法里的地址
+				result.push_back(temp_area.first + j); // 返回暂存方法里的地址
 			}
 			free_blocks[temp_size].erase(temp_area);
 			if (free_blocks[temp_size].empty())
@@ -122,9 +122,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		}
 		/* 最后一块单独处理 */
 		pair<int, int> temp_area = temp_areas.back();
-		for(int j = 0; j < reamain_size; j++)
+		for (int j = 0; j < reamain_size; j++)
 		{
-			result.push_back(temp_area.first + j);// 返回最后一块的地址
+			result.push_back(temp_area.first + j); // 返回最后一块的地址
 		}
 		pair<int, int> new_area = make_pair(temp_area.first + reamain_size, temp_area.second);
 		free_blocks[temp_area.second - temp_area.first + 1].erase(temp_area);
@@ -145,61 +145,53 @@ void DiskRegion::free_space(Replica *rep)
 	// 根据合成成功与否 删除或添加块
 	// 将链表的操作同步到set中
 	// 更新空闲块数量的记录
-	assert(rep!=nullptr);
-	int progress = 0;
-	vector<pair<int, int>> to_insert_sections;
+	assert(rep != nullptr);
 	int addr = rep->addr_part[0];
-	int start  = addr;
+	int start = addr;
 	int end = addr;
-	for(size_t i = 1;i<rep->info.size;i++)
+	vector<pair<int, int>> to_insert_sections;
+	to_insert_sections.reserve(rep->info.size);
+	/* 合并空闲空间 减少操作次数 */
+	for (size_t i = 1; i < rep->info.size; i++)
+	{
 		addr = rep->addr_part[i];
-		if(addr == end + 1){
+		if (addr == end + 1)
 			end = addr;
-		}else{
-			auto node = make_shared<ListNode>(start, end);
-			SectionList.push_back(node);
-			SectionSet[1].insert(node);
+		else
+		{
+			int size_key = min(end - start + 1, 6);
+			to_insert_sections.emplace_back(start, end);
 			start = addr;
 			end = addr;
 		}
 	}
-	for (auto it_map = free_blocks.begin(); it_map != free_blocks.end(); it_map++)
+	to_insert_sections.emplace_back(start, end); // 结尾空间单独插入（整个为一个区间也在此插入）
+	/* 遍历插入区段 */
+	for (auto &section : to_insert_sections)
 	{
-		for (auto it_set = it_map->second.begin(); it_set != it_map->second.end();)
+		auto new_node = make_shared<ListNode>(section.first, section.second);
+		auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
+		vector<shared_ptr<ListNode>> temp_deletes;
+		if (it != SectionList.begin()) // 存在前一个区间
 		{
-			int area_start = it_set->first;	   // 区域起始地址
-			int old_area_end = it_set->second; // 区域结束地址
-			int new_area_end = old_area_end;   // 合并后的区域结束地址
-			while (next(it_set) != it_map->second.end() && next(it_set)->first == it_set->second + 1)
-			{
-				new_area_end = next(it_set)->second;   // 找到合并块的尾巴
-				it_set = it_map->second.erase(it_set); // 删除原区域
-			}
-			if (new_area_end != old_area_end) // 说明进行了合并
-			{	
-				it_set = it_map->second.erase(it_set); // 删除while退出时的最后一个连续区块
-				int new_key = new_area_end - area_start + 1;
-				if (new_key > MAX_FREE_BLOCK_KEY)
-					new_key = MAX_FREE_BLOCK_KEY;
-				free_blocks[new_key].insert(make_pair(area_start, new_area_end)); // 插入新区域
-			}
-			else // 没有进行合并 迭代器后移
-			{
-				it_set++;
-			}
+			--it;							   // 指向前一个区间
+			if ((*it)->end == new_node->start) // 处理与前区间邻接
+				new_node->start = (*it)->start;
+			++it; // 回到插入位置
 		}
+		if (it != SectionList.end() && (*it)->start == new_node->end) // 存在后一个区间
+			new_node->end = (*it)->end;								  // 处理与后区间邻接
+		/* 删除被合并的区间 */
+		for (int i = 0; i < temp_deletes.size(); i++)
+		{
+			SectionList.remove(temp_deletes[i]);
+			int size_key = min(temp_deletes[i]->end - temp_deletes[i]->start + 1, 6);
+			SectionSet[size_key].erase(temp_deletes[i]);
+		}
+		/* 插入新区间 */
+		SectionList.insert(it, new_node);
+		int size_key = min(section.second - section.first + 1, 6);
+		SectionSet[size_key].insert(new_node);
 	}
 	free_blocks_size += rep->info.size;
-	/* TODO是否需要删除空闲块为空的种类？*/
-	for (auto it_map = free_blocks.begin(); it_map != free_blocks.end();)
-	{
-		if (it_map->second.empty())
-		{
-			it_map = free_blocks.erase(it_map);
-		}
-		else
-		{
-			it_map++;
-		}
-	}
 }
