@@ -34,6 +34,7 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		{
 			result.emplace_back((*write_area_it)->start + i);
 		}
+		SectionList.remove(*write_area_it);
 		SectionSet[rep_size].erase(write_area_it);
 	}
 	else if (wirte_mode_flag == MAXFREE_WRITE)
@@ -50,6 +51,9 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		if(new_key < MAX_FREE_BLOCK_KEY)// 若新的空闲块小于MAX_FREE_BLOCK_KEY，则插入到对应的set中
 		{
 			shared_ptr<ListNode> new_node = *write_area_it;
+			auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
+			SectionList.insert(it, new_node);
+			SectionList.remove(*write_area_it);
 			SectionSet[new_key].insert(new_node);
 			SectionSet[MAX_FREE_BLOCK_KEY].erase(write_area_it);
 		}
@@ -59,7 +63,28 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		int remain_size = rep_size;
 		vector<pair<shared_ptr<ListNode>, int>> temp_opt;// shared_ptr<ListNode>:存储写入区域 int写入个数
 		assert(SectionSet[MAX_FREE_BLOCK_KEY].size() == 0 && SectionSet[rep_size].size() == 0);
-		for(int discret_key = rep_size - 1; remain_size > 0; discret_key--)// 进行离散存储选择
+		// 考虑没有1的空闲块
+		if(rep_size == 1)
+		{
+			int temp_key = 2;
+			while(SectionSet[temp_key].size() == 0)
+			{
+				temp_key++;
+			}
+			auto write_area_it = SectionSet[temp_key].begin();
+			result.emplace_back((*write_area_it)->start);
+			(*write_area_it)->start ++;
+			shared_ptr<ListNode> new_node = *write_area_it;
+			auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
+			SectionList.insert(it, new_node);
+			SectionList.remove(*write_area_it);
+			SectionSet[new_node->end - new_node->start + 1].insert(new_node);
+			SectionSet[temp_key].erase(write_area_it);
+			free_blocks_size -= rep_size;
+			return result;
+		}
+		assert(rep_size != 1);
+		for(int discret_key = 5; remain_size > 0; discret_key--)// 进行离散存储选择
 		{
 			assert(discret_key >= 1);
 			if(SectionSet[discret_key].size() == 0) continue;
@@ -73,22 +98,26 @@ vector<int> DiskRegion::use_space(Replica *rep)
 		}
 		for(int i = 0; i < temp_opt.size() - 1; i++)// 执行离散存储
 		{
-			for(int j = temp_opt[i].first->start; j <= temp_opt[i].first->start; j++)
+			for(int j = temp_opt[i].first->start; j <= temp_opt[i].first->end; j++)
 			{
 				result.emplace_back(j);
 			}
 			auto temp_write_area_it = SectionSet[temp_opt[i].second].find(temp_opt[i].first);
 			assert(temp_write_area_it != SectionSet[temp_opt[i].second].end());
+			SectionList.remove(*temp_write_area_it);
 			SectionSet[temp_opt[i].second].erase(temp_write_area_it);
 		}
-		for(int j = temp_opt.back().first->start; j <= temp_opt.back().first->start; j++)// 最后的地址单独处理
+		for(int j = temp_opt.back().first->start; j <= temp_opt.back().first->end; j++)// 最后的地址单独处理
 		{
 			result.emplace_back(j);
 		}
 		int last_opt_key = temp_opt.back().first->end - temp_opt.back().first->start + 1;// 最后的使用的空闲块移动位置
 		auto temp_write_area_it = SectionSet[last_opt_key].find(temp_opt.back().first);
-		assert(temp_write_area_it != SectionSet[last_opt_key].find(temp_opt.back().first));
+		assert(temp_write_area_it != SectionSet[last_opt_key].end());
 		shared_ptr<ListNode> new_node = *temp_write_area_it;
+		auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
+		SectionList.insert(it, new_node);
+		SectionList.remove(*temp_write_area_it);
 		SectionSet[last_opt_key - temp_opt.back().second].insert(new_node);
 		SectionSet[last_opt_key].erase(temp_write_area_it);
 	}
