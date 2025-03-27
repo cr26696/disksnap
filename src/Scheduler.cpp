@@ -91,22 +91,19 @@ void Scheduler::excute_find()
         job_threads[i].excute_find();
     }
 }
-void Scheduler::req_upload()
+string Scheduler::getUploadInfo()
 {
+    string info = "";
     Scheduler &SD = Scheduler::getInstance();
-    DiskManager &DM = DiskManager::getInstance();
-    lock_guard<std::mutex> lock(mutex_);
     // 统计完成请求数量和信息
     int complete_num = 0;
-    string info = "";
-
     vector<int> complete_reqs = SD.get_complete_reqs_id();
-    printf("%zd\n", complete_reqs.size());
+    info += to_string(complete_reqs.size()) + "\n";
     for (int req_id : complete_reqs)
     {
         info += to_string(req_id) + "\n";
     }
-    printf("%s", info.c_str());
+    return info;
 }
 
 void Scheduler::end()
