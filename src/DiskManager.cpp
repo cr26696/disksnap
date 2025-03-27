@@ -94,6 +94,15 @@ Disk &DiskManager::get_disk(int disk_id)
     return disks[disk_id];
 }
 
+void DiskManager::oprate_upload()
+{
+    for (int i = 0;i<DiskNum;i++)
+    {
+        printf("%s", disks[i].upload_info.c_str());
+    }
+    
+}
+
 // 清除帧结束，调用清理
 void DiskManager::end()
 {

@@ -37,16 +37,18 @@ struct Block
 };
 class Disk
 {
+    friend class DiskManager;
     friend class PersuadeThread;
 private:
     int head_s;                                               // 磁头上个操作 -1初始化 0刚jump过 >0
     int head;       // 初始为0 如size == 8000 可能的值为0~7999
-    bool phase_end; // 是否结束当前阶段
     int elapsed;    // 当前时间片已用token数
+    int freeBlocks;
     Replica *replicas[MAX_OBJECT_NUM]={nullptr};//已存储的所有副本
     Block blocks[MAX_DISK_SIZE];//磁盘各存储单元
     std::vector<DiskRegion> regions;//磁盘各区域
-    int freeBlocks;
+    std::string upload_info;
+    bool phase_end; // 是否结束当前阶段
 public:
     const int id;
     const int volume;     // 磁盘容量

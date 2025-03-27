@@ -98,17 +98,20 @@ void System::delete_action()
     }
     vector<int> canceled_reqs_id = SD.get_canceled_reqs_id();
     int cancel_num = canceled_reqs_id.size();
-    printf("%d\n", cancel_num);
+    string upload_info;
+    upload_info += to_string(cancel_num) + "\n";
     for (int i = 0; i < cancel_num; i++)
     {
-        printf("%d\n", canceled_reqs_id[i]);
+        upload_info += to_string(canceled_reqs_id[i]) + "\n";
     }
+    // printf("%s", upload_info.c_str());
     fflush(stdout);
 }
 // 读取请求 添加到scheduler中 scheduler根据负载情况具体交给disk
 void System::read_action()
 {
     Scheduler &SD = Scheduler::getInstance();
+    DiskManager &DM = DiskManager::getInstance();
     int n_read;
     int request_id, object_id;
     scanf("%d", &n_read);
@@ -118,7 +121,8 @@ void System::read_action()
         SD.add_request(request_id, object_id);
     }
     SD.excute_find();
-    SD.req_upload();
+    // DM.oprate_upload();
+    // SD.req_upload();
     fflush(stdout);
 }
 
@@ -136,7 +140,7 @@ void System::write_action()
         write_info += to_string(id) + "\n";        // 第一行 存储对象id + 换行
         write_info += DM.store_obj(id, size, tag); // 2 3 4行 各磁盘存储对象信息
     }
-    printf("%s", write_info.c_str());
+    // printf("%s", write_info.c_str());
     fflush(stdout);
 }
 

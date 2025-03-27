@@ -45,7 +45,8 @@ bool Disk::operate(DiskOp op, int param)
             phase_end = true;
             return false;
         }
-        printf("j %d\n", param + 1);
+        // printf("j %d\n", param + 1);
+        upload_info+= "j " + to_string(param + 1) + "\n";
         head = param % volume;
         head_s = 0;
         elapsed = tokenG + 1;
@@ -59,8 +60,9 @@ bool Disk::operate(DiskOp op, int param)
                 phase_end = true;
                 return false;
             }
-            std::string s(param, 'p');
-            printf("%s", s.c_str()); // 使用 c_str() 将 std::string 转换为 const char*
+            string s(param, 'p');
+            upload_info.append(s);
+            // printf("%s", s.c_str()); // 使用 c_str() 将 std::string 转换为 const char*
             head += param;
             head = head % volume;
             head_s = 1;
@@ -84,7 +86,8 @@ bool Disk::operate(DiskOp op, int param)
         {
             elapsed += consume_token;
             head_s = static_cast<int>(std::ceil(consume_token * 0.8));
-            printf("r");
+            upload_info+="r";
+            // printf("r");
             head++;
             return true;
         }
@@ -99,8 +102,8 @@ void Disk::op_end()
 {
     if (elapsed >= tokenG)
         return;
-
-    printf("#\n");
+    upload_info+= "#\n";
+    // printf("#\n");
     elapsed = tokenG;
     phase_end = true;
 }
@@ -170,6 +173,7 @@ void Disk::end()
 {
     elapsed = 0;
     phase_end = false;
+    upload_info.clear();
 }
 
 int Disk::get_regionIndix(int addr)
