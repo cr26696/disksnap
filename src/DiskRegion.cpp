@@ -8,6 +8,7 @@ DiskRegion::DiskRegion(int start, int end) : start(start), end(end), free_blocks
 	auto node = make_shared<ListNode>(start, end);
 	// 初始化第一个区域
 	SectionList.push_back(node);
+	SectionList.push_back(node);
 	SectionSet[temp_key].insert(node);
 }
 
@@ -101,21 +102,74 @@ vector<int> DiskRegion::use_space(Replica *rep)
 
 void DiskRegion::free_space(Replica *rep)
 {
-	return;
+	// 新增释放的空间
+	// 尝试合并相邻块
+	// 根据合成成功与否 删除或添加块
+	// 将链表的操作同步到set中
+	// 更新空闲块数量的记录
+	assert(rep != nullptr);
+	int addr = rep->addr_part[0];
+	int start = addr;
+	int end = addr;
+	vector<pair<int, int>> to_insert_sections;
+	to_insert_sections.reserve(rep->info.size);
+	/* 合并空闲空间 减少操作次数 */
+	for (size_t i = 1; i < rep->info.size; i++)
+	{
+		addr = rep->addr_part[i];
+		if (addr == end + 1)
+			end = addr;
+		else
+		{
+			int size_key = min(end - start + 1, 6);
+			to_insert_sections.emplace_back(start, end);
+			start = addr;
+			end = addr;
+		}
+	}
+	to_insert_sections.emplace_back(start, end); // 结尾空间单独插入（整个为一个区间也在此插入）
+	/* 遍历插入区段 */
+	for (auto &section : to_insert_sections)
+	{
+		auto new_node = make_shared<ListNode>(section.first, section.second);
+		auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
+		vector<shared_ptr<ListNode>> temp_deletes;
+		if (it != SectionList.begin()) // 存在前一个区间
+		{
+			--it;							   // 指向前一个区间
+			if ((*it)->end == new_node->start) // 处理与前区间邻接
+				new_node->start = (*it)->start;
+			++it; // 回到插入位置
+		}
+		if (it != SectionList.end() && (*it)->start == new_node->end) // 存在后一个区间
+			new_node->end = (*it)->end;								  // 处理与后区间邻接
+		/* 删除被合并的区间 */
+		for (int i = 0; i < temp_deletes.size(); i++)
+		{
+			SectionList.remove(temp_deletes[i]);
+			int size_key = min(temp_deletes[i]->end - temp_deletes[i]->start + 1, 6);
+			SectionSet[size_key].erase(temp_deletes[i]);
+		}
+		/* 插入新区间 */
+		SectionList.insert(it, new_node);
+		int size_key = min(section.second - section.first + 1, 6);
+		SectionSet[size_key].insert(new_node);
+	}
+	free_blocks_size += rep->info.size;
 }
 
 int DiskRegion::get_write_mode_flag(int size)
 {
-	if (SectionSet[size].empty())
+	if(SectionSet[size].size() > 0)
 	{
-		return COMPLET_WRITE; // 完全写入
+		return COMPLET_WRITE;
 	}
-	else if (SectionSet[size].empty())
+	else if(SectionSet[MAX_FREE_BLOCK_KEY].size() > 0)
 	{
-		return MAXFREE_WRITE; // 富余写入
+		return MAXFREE_WRITE;
 	}
 	else
 	{
-		return DISCRET_WRITE; // 离散写入及其它情况
+		return DISCRET_WRITE;
 	}
 }
