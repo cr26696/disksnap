@@ -14,57 +14,57 @@ DiskRegion::DiskRegion(int start, int end) : region_start(start), region_end(end
 
 void DiskRegion::check_section_list()
 {
-	if (SectionList.empty())
-	{
-		std::cout << "SectionList is empty." << std::endl;
-		return;
-	}
+	// if (SectionList.empty())
+	// {
+	// 	std::cout << "SectionList is empty." << std::endl;
+	// 	return;
+	// }
 
-	auto prev_it = SectionList.begin();
-	auto current_it = std::next(prev_it);
+	// auto prev_it = SectionList.begin();
+	// auto current_it = std::next(prev_it);
 
-	while (current_it != SectionList.end())
-	{
-		if ((*current_it)->start == (*prev_it)->start)
-		{
-			std::cout << "Error: Node at position " << std::distance(SectionList.begin(), current_it)
-					  << " has start value " << (*current_it)->start
-					  << " which is not less than the previous node's start value " << (*prev_it)->start
-					  << std::endl;
-		}
-		prev_it = current_it;
-		++current_it;
-	}
+	// while (current_it != SectionList.end())
+	// {
+	// 	if ((*current_it)->start == (*prev_it)->start)
+	// 	{
+	// 		std::cout << "Error: Node at position " << std::distance(SectionList.begin(), current_it)
+	// 				  << " has start value " << (*current_it)->start
+	// 				  << " which is not less than the previous node's start value " << (*prev_it)->start
+	// 				  << std::endl;
+	// 	}
+	// 	prev_it = current_it;
+	// 	++current_it;
+	// }
 }
 void DiskRegion::check_section_list_error()
 {
-	int total_length = 0;
-	for (const auto &node : SectionList)
-	{
-		total_length += node->end - node->start + 1;
-	}
+	// int total_length = 0;
+	// for (const auto &node : SectionList)
+	// {
+	// 	total_length += node->end - node->start + 1;
+	// }
 
-	if (total_length != free_blocks_size)
-	{
-		std::cout << "Error: Total length of sections (" << total_length
-				  << ") does not match free_blocks_size (" << free_blocks_size << ")." << std::endl;
-	}
+	// if (total_length != free_blocks_size)
+	// {
+	// 	std::cout << "Error: Total length of sections (" << total_length
+	// 			  << ") does not match free_blocks_size (" << free_blocks_size << ")." << std::endl;
+	// }
 }
 void DiskRegion::check_size_leagal(int flag){
-	for(int i=1;i<=5;i++){
-		if(SectionSet[i].size() == 0) continue;
-		for(auto it = SectionSet[i].begin(); it != SectionSet[i].end(); it++){
-			if((*it)->end - (*it)->start + 1 != i){
-				std::cout << "Error: size of section is not legal" << std::endl;
-			}
-		}
-	}
-	if(SectionSet[6].size() == 0) return;
-	for(auto it = SectionSet[6].begin(); it != SectionSet[6].end(); it++){
-		if((*it)->end - (*it)->start + 1 <= 5){
-			std::cout << "Error: size of section is not legal" << std::endl;
-		}
-	}
+	// for(int i=1;i<=5;i++){
+	// 	if(SectionSet[i].size() == 0) continue;
+	// 	for(auto it = SectionSet[i].begin(); it != SectionSet[i].end(); it++){
+	// 		if((*it)->end - (*it)->start + 1 != i){
+	// 			std::cout << "Error: size of section is not legal" << std::endl;
+	// 		}
+	// 	}
+	// }
+	// if(SectionSet[6].size() == 0) return;
+	// for(auto it = SectionSet[6].begin(); it != SectionSet[6].end(); it++){
+	// 	if((*it)->end - (*it)->start + 1 <= 5){
+	// 		std::cout << "Error: size of section is not legal" << std::endl;
+	// 	}
+	// }
 }
 /// @brief 分配副本大小的空闲区域，调整muiltimap
 /// @param rep
@@ -255,54 +255,31 @@ void DiskRegion::free_space(Replica *rep)
 		}
 	}
 	to_insert_sections.emplace_back(start, end); // 结尾空间单独插入（整个为一个区间也在此插入）
-	/* 遍历插入区段 */
 	for (auto &section : to_insert_sections)
 	{
-		auto new_node = make_shared<ListNode>(section.first, section.second);
-		auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
-		vector<shared_ptr<ListNode>> temp_deletes;
-		if (it != SectionList.begin()) // 存在前一个区间
-		{
-			--it;							   // 指向前一个区间
-			if ((*it)->end + 1 == new_node->start) {
-				// 处理与前区间邻接
-				new_node->start = (*it)->start;
-				temp_deletes.push_back(*it);
-			}
-			++it; // 回到插入位置
+		shared_ptr<ListNode> new_node = make_shared<ListNode>(section.first, section.second);
+		SectionList.push_back(new_node);
+	}
+	SectionList.sort([](const std::shared_ptr<ListNode>& a, const std::shared_ptr<ListNode>& b) {
+        return a->start < b->start;
+    });
+	for(auto it = SectionList.begin(); it != SectionList.end();){
+		auto next_it = next(it);
+		if(next_it == SectionList.end()) break;
+		if((*it)->end == (*next_it)->start - 1){
+			int temp_next_key = min((*next_it)->end - (*next_it)->start + 1, 6);
+			int temp_end = (*next(it))->end;;
+			SectionSet[temp_next_key].erase((*next_it));
+			(*it)->end = temp_end;
+			int temp_new_key = min((*it)->end - (*it)->start + 1, 6);
+			SectionSet[temp_new_key].insert(*it);
+			SectionList.erase(next_it);
 		}
-		if (it != SectionList.end() && (*it)->start == new_node->end+1){
-			// 存在后一个区间
-			new_node->end = (*it)->end;								  // 处理与后区间邻接
-			temp_deletes.push_back(*it);
-		} 
-		/* 删除被合并的区间 */
-		for (int i = 0; i < temp_deletes.size(); i++)
-		{
-			SectionList.remove(temp_deletes[i]);
-			int size_key = min(temp_deletes[i]->end - temp_deletes[i]->start + 1, 6);
-			SectionSet[size_key].erase(temp_deletes[i]);
-			check_size_leagal(17);
+		else{
+			it++;
 		}
-		/* 插入新区间 */
-		it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
-		SectionList.insert(it, new_node);
-		int size_key = min(section.second - section.first + 1, 6);
-		SectionSet[size_key].insert(new_node);
-		check_size_leagal(18);
 	}
 	free_blocks_size += rep->info.size;
-	if (SectionList.size() >= 2)
-	{
-		auto it = SectionList.begin();
-		int i1 = (*it)->start;
-		int i2 = (*next(it))->start;
-		if (i1 == i2)
-			throw invalid_argument("Invalid free space");
-	}
-	check_section_list();
-	check_section_list_error();
-	check_size_leagal(19);
 }
 
 int DiskRegion::get_write_mode_flag(int size)

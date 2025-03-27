@@ -32,7 +32,7 @@ private:
     std::vector<std::vector<int>> fre_read;  // 读取操作统计数据
     std::vector<int> label_index;            // 全局变量，记录每个标签在磁盘中的起始位置
     std::vector<double> tag_ratio;
-    bool doUpload = false;
+    bool doUpload = true;
 private:
     System(const System &) = delete;
     System &operator=(const System &) = delete;

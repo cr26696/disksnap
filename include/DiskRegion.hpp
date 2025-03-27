@@ -21,10 +21,10 @@ struct ListNode {
     int end;
     ListNode(int s, int e) : start(s), end(e) {}
 
-    // 为了在 unordered_set 中使用，定义相等比较操作符
-    bool operator==(const ListNode& other) const {
-        return start == other.start && end == other.end;
-    }
+    // // 为了在 unordered_set 中使用，定义相等比较操作符
+    // bool operator==(const ListNode& other) const {
+    //     return start == other.start && end == other.end;
+    // }
 	bool operator<(const ListNode& other) const {
         return start < other.start;
     }
