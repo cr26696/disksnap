@@ -65,7 +65,7 @@ bool Disk::operate(DiskOp op, int param)
                 head_s = 1;
                 elapsed += param;
                 phase_end = true;
-                return false;
+                return true;
             }
             string s(param, 'p');
             upload_info.append(s);
@@ -96,6 +96,7 @@ bool Disk::operate(DiskOp op, int param)
             upload_info+="r";
             // printf("r");
             head++;
+            head = head % volume;
             return true;
         }
         break;

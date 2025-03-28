@@ -6,10 +6,11 @@ DiskRegion::DiskRegion(int start, int end) : region_start(start), region_end(end
 	int size = end - start + 1;
 	int temp_key = free_blocks_size > 5 ? 6 : free_blocks_size;
 	auto node = make_shared<ListNode>(start, end);
-	// 初始化第一个区域
-	SectionList.push_back(node);
-	SectionSet[temp_key].insert(node);
-	check_size_leagal(0);
+	// // 初始化第一个区域
+	// SectionList.push_back(node);
+	// SectionSet[temp_key].insert(node);
+	// check_size_leagal(0);
+	free_blocks.push_back(make_pair(start, end));
 }
 
 void DiskRegion::check_section_list()
@@ -46,18 +47,24 @@ void DiskRegion::check_section_list_error(int i)
 		total_length += node->end - node->start + 1;
 	}
 
-	for(int jj = 1; jj <= 6; jj++){
-		for(auto it = SectionSet[jj].begin(); it != SectionSet[jj].end(); it++){
-			if(check_set.find((*it)->start) == check_set.end()){
+	for (int jj = 1; jj <= 6; jj++)
+	{
+		for (auto it = SectionSet[jj].begin(); it != SectionSet[jj].end(); it++)
+		{
+			if (check_set.find((*it)->start) == check_set.end())
+			{
 				check_set.insert((*it)->start);
 			}
-			else{
+			else
+			{
 				std::cout << "Error: Duplicate start value " << (*it)->start << " found in SectionSet." << std::endl;
 			}
-			if(check_set_end.find((*it)->end) == check_set_end.end()){
+			if (check_set_end.find((*it)->end) == check_set_end.end())
+			{
 				check_set_end.insert((*it)->end);
 			}
-			else{
+			else
+			{
 				std::cout << "Error: Duplicate start value " << (*it)->end << " found in SectionSet." << std::endl;
 			}
 		}
@@ -68,18 +75,26 @@ void DiskRegion::check_section_list_error(int i)
 				  << ") does not match free_blocks_size (" << free_blocks_size << ")." << std::endl;
 	}
 }
-void DiskRegion::check_size_leagal(int flag){
-	for(int i=1;i<=5;i++){
-		if(SectionSet[i].size() == 0) continue;
-		for(auto it = SectionSet[i].begin(); it != SectionSet[i].end(); it++){
-			if((*it)->end - (*it)->start + 1 != i){
+void DiskRegion::check_size_leagal(int flag)
+{
+	for (int i = 1; i <= 5; i++)
+	{
+		if (SectionSet[i].size() == 0)
+			continue;
+		for (auto it = SectionSet[i].begin(); it != SectionSet[i].end(); it++)
+		{
+			if ((*it)->end - (*it)->start + 1 != i)
+			{
 				std::cout << "Error: size of section is not legal" << std::endl;
 			}
 		}
 	}
-	if(SectionSet[6].size() == 0) return;
-	for(auto it = SectionSet[6].begin(); it != SectionSet[6].end(); it++){
-		if((*it)->end - (*it)->start + 1 <= 5){
+	if (SectionSet[6].size() == 0)
+		return;
+	for (auto it = SectionSet[6].begin(); it != SectionSet[6].end(); it++)
+	{
+		if ((*it)->end - (*it)->start + 1 <= 5)
+		{
 			std::cout << "Error: size of section is not legal" << std::endl;
 		}
 	}
@@ -88,237 +103,199 @@ void DiskRegion::check_size_leagal(int flag){
 /// @param rep
 vector<int> DiskRegion::use_space(Replica *rep)
 {
-	check_all(1);
-	int wirte_mode_flag;
-	vector<int> result;
-	int rep_size = rep->info.size;
-	assert(rep_size <= free_blocks_size);
-
-	/* 进行写入策略判断 */
-	wirte_mode_flag = get_write_mode_flag(rep_size);
-
-	/* 按照模式进行写入 */
-	if (wirte_mode_flag == COMPLET_WRITE)
+	int obj_id = rep->info.id;
+	int size = rep->info.size;
+	vector<int> result_addr;
+	// int current_write_point = 0;
+	int temp_write_point = 0;
+	typedef list<pair<int, int>>::iterator p_it; // 记录暂存时所选择空闲块的迭代器
+	vector<pair<p_it, int>> temp_operate;		 // 记录暂存空闲块与块大小
+	pair<p_it, int> not_discret_write;
+	int MODE_FLAG = DISCRET_MODE;
+	/* 进行写入模式判断 完全写入、富余写入、分段写入 */
+	for (auto it = free_blocks.begin(); it != free_blocks.end(); it++)
 	{
-		assert(SectionSet[rep_size].size() > 0);
-		// auto &write_area_set = SectionSet[rep_size];
-		auto write_area_it = SectionSet[rep_size].begin();
-		assert(write_area_it != SectionSet[rep_size].end());
-		assert((*write_area_it)->end - (*write_area_it)->start + 1 == rep_size);
-		for (int i = 0; i < rep_size; i++)
+		int free_block_size = it->second - it->first + 1; // 当前空闲块的空间
+		if (free_block_size == size)
 		{
-			result.emplace_back((*write_area_it)->start + i);
+			MODE_FLAG = COMPLET_MODE;
+			not_discret_write = make_pair(it, size);
+			break;
 		}
-		// check_all(2);
-		SectionList.remove(*write_area_it);
-		// SectionSet[rep_size].erase(write_area_it);
-		free_blocks_size -= rep->info.size; // 维护空闲块的总数量
-		// check_all(3);
-	}
-	else if (wirte_mode_flag == MAXFREE_WRITE)
-	{
-		assert(SectionSet[MAX_FREE_BLOCK_KEY].size() > 0);
-		// auto &write_area_set = SectionSet[MAX_FREE_BLOCK_KEY];
-		auto write_area_it = SectionSet[MAX_FREE_BLOCK_KEY].begin();
-		assert(write_area_it != SectionSet[MAX_FREE_BLOCK_KEY].end());
-		assert((*write_area_it)->end - (*write_area_it)->start + 1 > rep_size);
-		for (int i = 0; i < rep_size; i++)
+		else if (free_block_size > size && free_block_size >= 6)
 		{
-			result.emplace_back((*write_area_it)->start + i);
+			MODE_FLAG = MAXFREE_MODE;
+			not_discret_write = make_pair(it, size);
 		}
-		// check_all(4);
-		// (*write_area_it)->start += rep_size; // 修改区域起始地址
-		shared_ptr<ListNode> new_node = make_shared<ListNode>((*write_area_it)->start + rep_size, (*write_area_it)->end);
-		SectionList.remove(*write_area_it);
-		SectionList.push_back(new_node);
-		// int new_key = (*write_area_it)->end - (*write_area_it)->start + 1;
-		// if (new_key < MAX_FREE_BLOCK_KEY) // 若新的空闲块小于MAX_FREE_BLOCK_KEY，则插入到对应的set中
-		// {
-		// 	SectionSet[new_key].insert(*write_area_it);
-		// 	SectionSet[MAX_FREE_BLOCK_KEY].erase(write_area_it);
-		// }
-		free_blocks_size -= rep->info.size; // 维护空闲块的总数量
-		// check_all(5);
-	}
-	else if (wirte_mode_flag == DISCRET_WRITE)
-	{
-		int remain_size = rep_size;
-		vector<pair<shared_ptr<ListNode>, int>> temp_opt; // shared_ptr<ListNode>:存储写入区域 int写入个数
-		assert(SectionSet[MAX_FREE_BLOCK_KEY].size() == 0 && SectionSet[rep_size].size() == 0);
-		for (int discret_key = 5; remain_size > 0; discret_key--) // 进行离散存储选择
+		else
 		{
-			assert(discret_key >= 1);
-			if (SectionSet[discret_key].size() == 0)
-				continue;
-			for (auto write_area_it = SectionSet[discret_key].begin(); write_area_it != SectionSet[discret_key].end(); write_area_it++)
+			/*--------进行分块暂存记录 以防无法连续存储  ---------*/
+			// TODO 改为优先使用碎片中的大号
+			if (temp_write_point != size)
 			{
-				if (remain_size - discret_key > 0)
+				int not_write_size = size - temp_write_point; // 仍未存入的对象块大小
+				// 标记暂存空间块使用情况 填满空闲块：填入剩余对象块剩余空间
+				if (not_write_size >= free_block_size)
 				{
-					temp_opt.emplace_back(*write_area_it, discret_key);// 操作的空闲块与空闲块的使用量 用完
-					remain_size -= discret_key;
+					temp_operate.emplace_back(it, free_block_size);
+					temp_write_point += free_block_size;
 				}
-					
-				else if (remain_size - discret_key <= 0){
-					temp_opt.emplace_back(*write_area_it, remain_size);// 操作的空闲块与空闲块的使用量 可能未用完
-					remain_size -= discret_key;
+				else
+				{
+					temp_operate.emplace_back(it, not_write_size);
+					temp_write_point += not_write_size;
 				}
-				if (remain_size <= 0)
-					break;
 			}
 		}
-		// check_all(6);
-		for (int i = 0; i < temp_opt.size() - 1; i++) // 执行离散存储
+	}
+	/* 开始按照模式进行存储 */
+	switch (MODE_FLAG)
+	{
+	case COMPLET_MODE:
+	{
+		p_it complet_block = not_discret_write.first; // it为所操作空闲块的迭代器
+		int com_free_block_size = complet_block->second - complet_block->first + 1;
+		assert(size == com_free_block_size);
+		for (int i = 0; i < size; i++)
 		{
-			for (int j = temp_opt[i].first->start; j <= temp_opt[i].first->end; j++)
+			// blocks[complet_block->first + i] = std::make_pair(obj_id, i);
+			// replica->addr_part[i] = complet_block->first + i;
+			result_addr.push_back(complet_block->first + i);
+		}
+		free_blocks.erase(complet_block); // 完全写入模式中进行节点删除
+		break;
+	}
+	case MAXFREE_MODE:
+	{
+		p_it maxfree_block = not_discret_write.first;
+		int max_free_block_size = maxfree_block->second - maxfree_block->first + 1;
+		assert(size < max_free_block_size);
+		for (int i = 0; i < size; i++)
+		{
+			// blocks[maxfree_block->first + i] = std::make_pair(obj_id, i);
+			// replica->addr_part[i] = maxfree_block->first + i;
+			result_addr.push_back(maxfree_block->first + i);
+		}
+		maxfree_block->first += size; // 富余写入模式中进行节点修改
+		break;
+	}
+	case DISCRET_MODE:
+	{
+		for (auto it : temp_operate)
+		{
+			int current_write_point = 0;
+			int operate_write_size = it.second;
+			p_it temp_operate_block = it.first;
+			for (int i = 0; i < operate_write_size; i++)
 			{
-				result.emplace_back(j);
+				// blocks[temp_operate_block->first + i] = std::make_pair(obj_id, current_write_point);
+				// replica->addr_part[current_write_point] = temp_operate_block->first + i;
+				result_addr.push_back(temp_operate_block->first + i);
+				// current_write_point++;
 			}
-			auto temp_write_area_it = SectionSet[temp_opt[i].second].find(temp_opt[i].first);// 找到所操作的空闲块的迭代器
-			assert(temp_write_area_it != SectionSet[temp_opt[i].second].end());
-			SectionList.remove(*temp_write_area_it);// 进行删除
-			// SectionSet[temp_opt[i].second].erase(temp_write_area_it);
+			int free_block_size = temp_operate_block->second - temp_operate_block->first + 1;
+			if (operate_write_size == free_block_size)
+			{ // 如果填满了整个空闲块，则删除该空闲块
+				free_blocks.erase(temp_operate_block);
+			}
+			else
+			{ // 否则修改空闲块的起始位置
+				temp_operate_block->first += operate_write_size;
+			}
 		}
-		/* 离散存储的最后一个操作地址单独处理 */
-		for (int j = temp_opt.back().first->start; j <= temp_opt.back().first->end; j++) 
-		{
-			result.emplace_back(j);
-		}
-		int last_opt_key = temp_opt.back().first->end - temp_opt.back().first->start + 1; // 最后的使用的空闲块的种类即key
-		auto temp_write_area_it = SectionSet[last_opt_key].find(temp_opt.back().first);
-		assert(temp_write_area_it != SectionSet[last_opt_key].end());
-		// assert(last_opt_key < MAX_FREE_BLOCK_KEY);
-		int new_last_opt_key = min(6, last_opt_key - temp_opt.back().second);// 被使用后的空闲块的种类即key
-		if(new_last_opt_key == 0)// 最后的操作空闲块中已经被使用完 只要删除不需要移动
-		{
-			SectionList.remove(*temp_write_area_it);
-			// SectionSet[last_opt_key].erase(temp_write_area_it);
-		}
-		else// 最后的操作空闲块中还没有被使用完 需要移动
-		{
-			assert(last_opt_key!=temp_opt.back().second);// 保证最后一次操作的空闲块没有被用完 需要移动
-			// (*temp_write_area_it)->start += temp_opt.back().second;
-			shared_ptr<ListNode> new_node = make_shared<ListNode>((*temp_write_area_it)->start + temp_opt.back().second, (*temp_write_area_it)->end);
-			SectionList.remove(*temp_write_area_it);
-			SectionList.push_back(new_node);
-			// shared_ptr<ListNode> new_node = *temp_write_area_it;
-			// SectionSet[new_last_opt_key].insert(new_node);
-			// SectionSet[last_opt_key].erase(temp_write_area_it);
-		}
-		free_blocks_size -= rep->info.size; // 维护空闲块的总数量
-		// check_all(7);
+		break;
 	}
-	else
+	default:
 	{
-		throw invalid_argument("Invalid write mode flag");
+		throw std::runtime_error("Error:  Write Mode Error");
+		break;
 	}
-	
-	SectionList.sort([](const std::shared_ptr<ListNode>& a, const std::shared_ptr<ListNode>& b) {
-        return a->start < b->start;
-    });
-	/* 清空当前unordered_set 重新进行计算 */
-	for (int i = 1; i <= MAX_FREE_BLOCK_KEY; ++i) {
-		SectionSet[i].clear();  
 	}
-	for(auto& it : SectionList)
-	{
-		int temp_key = min(it->end - it->start + 1, 6);
-		SectionSet[temp_key].insert(it);
-	}
-	// check_all(8);
-
-	return result;
+	free_blocks_size -= rep->info.size;
+	return result_addr;
 }
 
 void DiskRegion::free_space(Replica *rep)
 {
-	// 新增释放的空间
-	// 尝试合并相邻块
-	// 根据合成成功与否 删除或添加块
-	// 将链表的操作同步到set中
-	// 更新空闲块数量的记录
-	// check_all(9);
-	assert(rep != nullptr);
-	int addr = rep->addr_part[0];
-	int start = addr;
-	int end = addr;
-	vector<pair<int, int>> to_insert_sections;
-	to_insert_sections.reserve(rep->info.size);
-	/* 合并空闲空间 减少操作次数 */
-	for (size_t i = 1; i < rep->info.size; i++)
-	{
-		addr = rep->addr_part[i];
-		if (addr == end + 1)
-			end = addr;
-		else
-		{
-			int size_key = min(end - start + 1, 6);
-			to_insert_sections.emplace_back(start, end);
-			start = addr;
-			end = addr;
-		}
-	}
-	to_insert_sections.emplace_back(start, end); // 结尾空间单独插入（整个为一个区间也在此插入）
-	for (auto &section : to_insert_sections)
-	{
-		shared_ptr<ListNode> new_node = make_shared<ListNode>(section.first, section.second);
-		SectionList.push_back(new_node);
-		SectionSet[min(section.second - section.first + 1, 6)].insert(new_node);
-	}
-	SectionList.sort([](const std::shared_ptr<ListNode>& a, const std::shared_ptr<ListNode>& b) {
-        return a->start < b->start;
-    });
-	for(auto it = SectionList.begin(); it != SectionList.end();){
-		auto next_it = next(it);
-		if(next_it == SectionList.end()) break;
-		if((*it)->end == (*next_it)->start - 1){
-			// int temp_it_key = min((*it)->end - (*it)->start + 1, 6);
-			// int temp_next_key = min((*next_it)->end - (*next_it)->start + 1, 6);
-			int temp_end = (*next(it))->end;;
-			// auto to_delete1 = SectionSet[temp_next_key].find(*next_it);
-			// auto to_delete2 = SectionSet[temp_it_key].find(*it);
-			// assert(to_delete1 != SectionSet[temp_next_key].end());
-			// assert(to_delete2 != SectionSet[temp_next_key].end());
-			// SectionSet[temp_next_key].erase(to_delete1);
-			// SectionSet[temp_it_key].erase(to_delete2);
-			(*it)->end = temp_end;
-			int temp_new_key = min((*it)->end - (*it)->start + 1, 6);
-			// SectionSet[temp_new_key].insert(*it);
-			SectionList.erase(next_it);//
-		}
-		else{
-			it++;
-		}
-	}
-	/* 清空当前unordered_set 重新进行计算 */
-	for (int i = 1; i <= MAX_FREE_BLOCK_KEY; ++i) {
-		SectionSet[i].clear();  
-	}
-	for(auto& it : SectionList)
-	{
-		int temp_key = min(it->end - it->start + 1, 6);
-		SectionSet[temp_key].insert(it);
-	}
+    int object_id = rep->info.id;
+    int size = rep->info.size;
+    // unordered_set<int> canceled_reqs = DiskManager::getInstance().canceled_reqs;
+    // if (replicas[object_id] == nullptr)
+    // {
+    //     throw std::invalid_argument("del_obj failed,No object id in this disk");
+    // }
+    // Replica *replica = replicas[object_id];  // 找到对应的副本
+    vector<int> temp_free_units;             // 存放空闲碎片
+    vector<pair<int, int>> temp_free_blocks; // 存放合并空闲碎片后的空闲区间
+    /*----------开始释放磁盘----------*/
+    for (int i = 0; i < size; i++)
+    {
+        int addr = rep->addr_part[i];
+        // assert(blocks[i] != nullptr);
+        // blocks[addr].reset();
+        temp_free_units.emplace_back(addr);
+    }
+    // replicas[object_id] = nullptr;
+    // delete (replica);
+    /*----------开始整理空闲块----------*/
+    sort(temp_free_units.begin(), temp_free_units.end()); // 将碎片块排序
+    int start = temp_free_units[0], end = temp_free_units[0];
+    for (int i = 1; i < temp_free_units.size(); i++)
+    { // 将空闲碎片合并为空闲区间
+        if (temp_free_units[i] == end + 1)
+        {
+            end = temp_free_units[i];
+        }
+        else if (temp_free_units[i] != end + 1)
+        { // 若当前块与前一个块不连续
+            temp_free_blocks.emplace_back(start, end);
+            start = temp_free_units[i];
+            end = temp_free_units[i];
+        }
+    }
+    temp_free_blocks.emplace_back(start, end); // 插入最后一个区间 单块
+    for (auto &block : temp_free_blocks)
+    {
+        free_blocks.push_back(block);
+    }
+    free_blocks.sort();
+    for (auto current_block = free_blocks.begin(); current_block != free_blocks.end();)
+    {
+        auto next_block = next(current_block);
+        if (next_block == free_blocks.end())
+            break;
+        assert(current_block->second < next_block->first); // 理论上不会大于 最多相邻
+        if (current_block->second == next_block->first - 1)
+        { // 上一个空闲区别和下一个空闲区间相邻 需要进行合并
+            current_block->second = next_block->second;
+            free_blocks.erase(next_block);
+        }
+        else
+        {
+            current_block++;
+        }
+    }
 	free_blocks_size += rep->info.size;
-	check_all(10);
 }
 
 int DiskRegion::get_write_mode_flag(int size)
 {
 	if (SectionSet[size].size() > 0)
 	{
-		return COMPLET_WRITE;
+		return COMPLET_MODE;
 	}
 	else if (SectionSet[MAX_FREE_BLOCK_KEY].size() > 0)
 	{
-		return MAXFREE_WRITE;
+		return MAXFREE_MODE;
 	}
 	else
 	{
-		return DISCRET_WRITE;
+		return DISCRET_MODE;
 	}
 }
 
-void DiskRegion::check_all(int i){
+void DiskRegion::check_all(int i)
+{
 	check_section_list();
 	check_section_list_error(i);
 	check_size_leagal(i);

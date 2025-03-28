@@ -2,9 +2,10 @@
 #define DISKREGION_HPP
 
 #define MAX_FREE_BLOCK_KEY 6
-#define COMPLET_WRITE 1
-#define MAXFREE_WRITE 2
-#define DISCRET_WRITE 3
+
+#define COMPLET_MODE 1
+#define MAXFREE_MODE 2
+#define DISCRET_MODE 3
 
 #include <vector>
 #include <map>
@@ -45,6 +46,7 @@ private:
 	int free_blocks_size; // 持续维护，记录所有空闲块
 	std::list<std::shared_ptr<ListNode>> SectionList;//按地址存储空闲区段
     std::unordered_set<std::shared_ptr<ListNode>, ListNodeHash> SectionSet[MAX_FREE_BLOCK_KEY + 1];//大于5的区段都存在6中，其他按大小存储
+    std::list<std::pair<int, int>> free_blocks;
 public:
 	DiskRegion(int start, int end);
 	std::vector<int> use_space(Replica *rep);
