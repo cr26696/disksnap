@@ -155,6 +155,13 @@ void Disk::del_replica(Object &info)
     int idx_region = get_regionIndix(part1_addr);
     replicas[info.id] = nullptr;
     regions[idx_region].free_space(replica);
+    for(int i = 0; i < info.size; i++){
+        blocks[replica->addr_part[i]].used = false;
+        blocks[replica->addr_part[i]].obj_id = -1;
+        blocks[replica->addr_part[i]].part = -1;
+        blocks[replica->addr_part[i]].start = false;
+        blocks[replica->addr_part[i]].end = false;
+    }
     delete(replica);
 }
 //!! 这里一定要填tag 从1开始的tag 而不是转换的索引

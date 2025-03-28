@@ -21,10 +21,10 @@ struct ListNode {
     int end;
     ListNode(int s, int e) : start(s), end(e) {}
 
-    // // 为了在 unordered_set 中使用，定义相等比较操作符
-    // bool operator==(const ListNode& other) const {
-    //     return start == other.start && end == other.end;
-    // }
+    // 为了在 unordered_set 中使用，定义相等比较操作符
+    bool operator==(const ListNode& other) const {
+        return start == other.start && end == other.end;
+    }
 	bool operator<(const ListNode& other) const {
         return start < other.start;
     }
@@ -51,7 +51,8 @@ public:
 	void free_space(Replica *rep);
 	int get_write_mode_flag(int size);
     void check_section_list();
-    void check_section_list_error();
+    void check_section_list_error(int i);
     void check_size_leagal(int flag);
+    void check_all(int i);
 };
 #endif
