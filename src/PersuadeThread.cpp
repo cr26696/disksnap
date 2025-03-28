@@ -84,8 +84,6 @@ void PersuadeThread::excute_find()
                 // if(map_obj_requests.find(obj_id) != map_obj_requests.end())
                 // {
                     // int part = disk->blocks[*it_addr].value().second;
-                    // 存对象-> 添加请求 -> 迭代到对应请求块地址 -> 此时发现请求不存在了
-                    bool condition = map_obj_requests.find(obj_id) == map_obj_requests.end();
                     assert(map_obj_requests.find(obj_id) != map_obj_requests.end());
                     for(auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                     {
@@ -114,17 +112,57 @@ void PersuadeThread::excute_find()
                 break;
             }
         }
-        // 未在目标上，尝试移动至目标
-        if (disk->elapsed + distance + 64 > tokenG)
+        // 计算后续需要读取的区域长度 task_len，通义生成
+        int task_len = 0;
+        auto it = it_addr;
+        int current_addr = *it;
+        while (*it == current_addr)
         {
+            task_len++;
+            current_addr = (current_addr + 1) % volume;
+            ++it;
+            //环形判断
+            if (it == task_blocks.end())
+                it = task_blocks.begin();
+        }
+        // 未在目标上，尝试移动至目标(距离过长jump，距离中等pass，距离短判断使用pass/read)
+        if (disk->elapsed + distance + 64 > tokenG)    //这里jump没问题吗？
             disk->operate(JUMP, *it_addr);
-        }
         else
-        {
-            disk->operate(PASS, distance);
-        }
+        {   
+            if (distance <= 4){
+                int pass_cus = distance + read_custom(64, task_len);
+                int read_cus = read_custom(disk->head_s, distance + task_len);
+                if(pass_cus >= read_cus)
+                    disk->operate(READ, 0);
+                else
+                    disk->operate(PASS, distance);
+                }
+            else
+                disk->operate(PASS, distance);    
+        } 
     }
     disk->op_end();
+}
+
+//计算读取消耗的token
+int PersuadeThread::read_custom(int current_custom,int len){
+    int read_custom = 0;
+    
+    for(int i = 0; i < len; i++){
+        if (current_custom == 16)
+            read_custom += current_custom;
+        else if (current_custom == -1 || current_custom == 0){
+            current_custom = 64;
+            read_custom += current_custom; 
+        }
+        else
+        {       
+            current_custom = static_cast<int>(std::ceil(current_custom * 0.8));
+            read_custom += current_custom; 
+        }
+    }
+    return read_custom;
 }
 
 void PersuadeThread::end()

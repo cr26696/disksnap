@@ -28,6 +28,8 @@ public:
 	void rmv_req(Object &info);
 	void excute_find();
 
+	int read_custom(int current_costom, int len);
+
 	void end();
 };
 

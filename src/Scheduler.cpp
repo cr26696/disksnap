@@ -30,21 +30,36 @@ PersuadeThread &Scheduler::get_disk_thread(int thread_index)
 
 bool Scheduler::add_request(int req_id, int obj_id)
 {
-
     // 选择最适合的disk放入任务
     // 找到能响应请求的disk
     DiskManager &DM = DiskManager::getInstance();
     Object &obj = DM.objects[obj_id];
+    
+    // OPT 选盘优化（可以加入工作强度选择磁盘->负载均衡）
+    // 通过距离选择磁盘(存在分块且开始地址不一定最小)
     int ideal_id = obj.diskid_replica[0];
-    // 从第一个副本所在的磁盘线程开始比较
-    for (int i = 1; i < REP_NUM; i++)
+    int min_distance;
+    for (int i = 0; i < REP_NUM; i++)
     {
-        int compare_id = obj.diskid_replica[i];
-        int current_size = job_threads[ideal_id].job_count;
-        int compare_size = job_threads[compare_id].job_count;
-        if (compare_size < current_size)
+        //通义生成
+        int disk_id = obj.diskid_replica[i];
+        Disk* target_disk = &DiskManager::getInstance().get_disk(disk_id);
+        Replica* rep = target_disk->get_replica(obj_id);
+        
+        // 计算对象在该磁盘上的起始位置（取第一个块地址）
+        int obj_start_addr = rep->addr_part[0];   //第一个不一定储存在最前面...
+        int disk_head = target_disk->head;
+        int volume = target_disk->volume;
+        int distance = (obj_start_addr - disk_head + volume) % volume;
+        
+        if (i == 0){
+            min_distance = distance;
+            continue;
+        }    
+        if (distance < min_distance) 
         {
-            ideal_id = compare_id;
+            ideal_id = disk_id;
+            min_distance = distance;
         }
     }
     // 选好线程，调用添加任务函数

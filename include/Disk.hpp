@@ -39,6 +39,7 @@ class Disk
 {
     friend class DiskManager;
     friend class PersuadeThread;
+    friend class Scheduler;
 private:
     int head_s;                                               // 磁头上个操作 -1初始化 0刚jump过 >0
     int head;       // 初始为0 如size == 8000 可能的值为0~7999
