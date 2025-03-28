@@ -6,24 +6,23 @@ using namespace std;
 
 DiskManager *DiskManager::instance = nullptr;
 
-DiskManager::DiskManager(int DiskNum, int DiskVolume, int HeadToken)
+DiskManager::DiskManager(int DiskNum, int DiskVolume, int HeadToken, vector<double> &tag_ratio)
     : DiskNum(DiskNum),
       DiskVolume(DiskVolume),
       HeadToken(HeadToken)
 {
     disks.reserve(DiskNum);
-
     for (int i = 0; i < DiskNum; i++)
     {
-        disks.emplace_back(DiskVolume, HeadToken, i); // emplace_back调用构造函数直接存入，不触发拷贝
+        disks.emplace_back(DiskVolume, HeadToken, i, tag_ratio); // emplace_back调用构造函数直接存入，不触发拷贝
     }
 };
 
-DiskManager &DiskManager::getInstance(int DiskNum, int DiskVolume, int HeadToken)
+DiskManager &DiskManager::getInstance(int DiskNum, int DiskVolume, int HeadToken, vector<double> &tag_ratio)
 {
     if (instance == nullptr)
     {
-        instance = new DiskManager(DiskNum, DiskVolume, HeadToken); // 懒加载创建实例
+        instance = new DiskManager(DiskNum, DiskVolume, HeadToken, tag_ratio);
     }
     return *instance;
 }
@@ -35,79 +34,46 @@ DiskManager &DiskManager::getInstance()
     }
     return *instance;
 }
-
-// std::vector<Disk> &DiskManager::getDisks()
-// {
-//     return DiskManager::disks;
-// }
-
-void DiskManager::clean()
-{
-    // vector<Object> &objects = ObjectManager::getInstance()->getObjects();
-    // for (auto &obj : objects)
-    // {
-    //     for (int i = 1; i <= REP_NUM; i++)
-    //     {
-    //         if (obj.unit[i] == nullptr)
-    //             continue;
-    //         free(obj.unit[i]);
-    //         obj.unit[i] = nullptr;
-    //     }
-    // }
-}
 // 存放时要输出存储信息： 对象id 各副本存放位置
 // 返回存储对象的信息
-Object &DiskManager::store_obj(int id, int size, int tag)
+string DiskManager::store_obj(int id, int size, int tag)
 {
     objects[id] = Object(id, size, tag);
     Object &object = objects[id];
-    vector<int> Doptions; // disk options
-    // OPT numberOfFreeBlocks_计算结果存储
-    vector<int> spaces;
-    // 过滤空间不足存储的盘
-    for (int i = 0; i < DiskNum; i++)
-    {
-        spaces.push_back(disks[i].numberOfFreeBlocks_());
-        if (spaces[i] < size)
-        {
-            continue;
-        }
-        Doptions.push_back(i);
-    }
-    // 排序
-    sort(Doptions.begin(), Doptions.end(), [&](int a, int b)
-         { return spaces[a] > spaces[b]; });
-    // 假设排序后前三个盘空间最大
+    string s;
     for (int i = 0; i < REP_NUM; i++)
     {
-        int disk_id = Doptions[i];
-        object.diskid_replica[i] = disk_id;
-        // Replica *rep = new Replica{id, size, tag};
-        disks[disk_id].wrt_obj(object);
-    }
-    bool mute = false;
-    // 上报存储结果
-    if (!mute)
-    {
-        printf("%d\n", id);
-        for (int i = 0; i < REP_NUM; i++)
+        vector<Disk *> DiskOptions;
+        DiskOptions.reserve(DiskNum);
+        // 过滤
+        for (int j = 0; j < DiskNum; j++)
         {
-            int disk_id = Doptions[i];
-            Disk &d = disks[disk_id];
-            printf("%d", disk_id + 1);
-            // 每个块的存储地址
-            vector<int> addrs = d.get_store_pos(id);
-            string s;
-            for (int k = 0; k < size; k++)
-            {
-                // s += " " + addrs[k];
-                printf(" %d", addrs[k] + 1);
-            }
-            // printf("%s\n", s.c_str());
-            printf("\n");
+            // 过滤掉空间不足、已使用的盘
+            if (disks[j].getAllSpace() < size || disks[j].get_replica(id) != nullptr)
+                continue;
+            DiskOptions.push_back(&disks[j]);
         }
+        // 接下来选出最合适存放的盘
+        // 先找对应tag空间最大的盘
+        int idx_tag_space = 0; // tag区域空间最大的盘的下标
+        int idx_all_space = 0; // 全部空闲空间最大的盘的下标
+        for (int j = 1; j < DiskOptions.size(); j++)
+        {
+            if (DiskOptions[j]->getRegionSpace(tag) > DiskOptions[idx_tag_space]->getRegionSpace(tag))
+                idx_tag_space = j;
+            if (DiskOptions[j]->getAllSpace() > DiskOptions[idx_all_space]->getAllSpace())
+                idx_all_space = j;
+        }
+
+        Disk *disk;
+        if (DiskOptions[idx_tag_space]->getRegionSpace(tag) < size)
+            disk = DiskOptions[idx_all_space];
+        else
+            disk = DiskOptions[idx_tag_space]; // 对应tag区域足够存放 直接存入
+        s += disk->wrt_replica(object) + "\n";//盘号（注意从1开始) + 对象各块存储位置 + 换行
+        object.diskid_replica[i] = disk->id;
     }
-    return object;
+    return s;
 }
 // 移除3个obj_id的副本 返回关联的请求取消数量
 void DiskManager::remove_obj(int obj_id)
@@ -119,28 +85,8 @@ void DiskManager::remove_obj(int obj_id)
         int disk_id = info.diskid_replica[i];
         PersuadeThread &t = SD.get_disk_thread(disk_id);
         t.rmv_req(info);
-        disks[disk_id].del_obj(info);
+        disks[disk_id].del_replica(info);
     }
-    // objects[obj_id]= //这里直接没清理的必要了
-}
-void DiskManager::request_obj(int request_id, int object_id)
-{
-    // // 选择最适合的disk放入任务
-    // // 找到能响应请求的disk
-    // //  DiskManager DM = DiskManager::getInstance();
-    // Object &obj = objects[object_id];
-    // int ideal_id = obj.diskid_replica[0];
-    // // 从第一个副本所在的磁盘线程开始比较
-    // for (int i = 1; i < REP_NUM; i++)
-    // {
-    //     int compare_id = obj.diskid_replica[i];
-    //     if (job_threads[compare_id].task_requests.size() < job_threads[ideal_id].task_requests.size())
-    //     {
-    //         ideal_id = i;
-    //     }
-    // }
-    // // 选好线程，调用添加任务函数
-    // job_threads[ideal_id].add_req(request_id, objects[object_id]);
 }
 
 Disk &DiskManager::get_disk(int disk_id)
@@ -148,6 +94,16 @@ Disk &DiskManager::get_disk(int disk_id)
     return disks[disk_id];
 }
 
+string DiskManager::getUploadInfo()
+{
+    string upload_info;
+    for (int i = 0;i<DiskNum;i++)
+    {
+        upload_info += disks[i].upload_info;
+        // printf("%s", disks[i].upload_info.c_str());
+    }
+    return upload_info;
+}
 
 // 清除帧结束，调用清理
 void DiskManager::end()

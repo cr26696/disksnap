@@ -25,7 +25,6 @@ Scheduler &Scheduler::getInstance()
 
 PersuadeThread &Scheduler::get_disk_thread(int thread_index)
 {
-    // TODO: insert return statement here
     return job_threads[thread_index];
 }
 
@@ -69,29 +68,8 @@ bool Scheduler::add_request(int req_id, int obj_id)
     return true; // 假设添加总是成功
 }
 
-bool Scheduler::del_request(int req_id)
-{
-    lock_guard<std::mutex> lock(mutex_);
-    vector<Request> &requests = RequestManager::getInstance()->getRequests();
-    int object_id = requests[req_id].object_id;
-    auto &req_list = active_requests[object_id];
-    if (active_requests.find(req_id) == active_requests.end())
-        return false;
-    auto it = std::find(req_list.begin(), req_list.end(), req_id);
-    if (it != req_list.end())
-    {
-        req_list.erase(it);
-        if (req_list.empty())
-        {
-            active_requests.erase(object_id);
-        }
-        return true;
-    }
-    return false;
-}
-
 vector<int> Scheduler::get_canceled_reqs_id()
-{ // TODO 取消时 好像需要及时返回，每取消一个返回一个
+{
     int threadNum = job_threads.size();
     vector<int> vec;
     vec.reserve(3 * threadNum);
@@ -128,22 +106,19 @@ void Scheduler::excute_find()
         job_threads[i].excute_find();
     }
 }
-void Scheduler::req_upload()
+string Scheduler::getUploadInfo()
 {
+    string info = "";
     Scheduler &SD = Scheduler::getInstance();
-    DiskManager &DM = DiskManager::getInstance();
-    lock_guard<std::mutex> lock(mutex_);
     // 统计完成请求数量和信息
     int complete_num = 0;
-    string info = "";
-
     vector<int> complete_reqs = SD.get_complete_reqs_id();
-    printf("%zd\n", complete_reqs.size());
+    info += to_string(complete_reqs.size()) + "\n";
     for (int req_id : complete_reqs)
     {
         info += to_string(req_id) + "\n";
     }
-    printf("%s", info.c_str());
+    return info;
 }
 
 void Scheduler::end()

@@ -2,8 +2,6 @@
 #define REPLICA_HPP
 
 #include <vector>
-#include <memory>
-#include "Unit.hpp"
 #include "Object.hpp"
 struct Replica
 {
