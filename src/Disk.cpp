@@ -11,7 +11,7 @@ using namespace std;
 Disk::Disk(int volume, int G, int id)
     : volume(volume), tokenG(G), id(id)
 {
-    free_blocks.emplace_back(0, volume-1);
+    free_blocks.emplace_back(0, volume - 1);
     head = 0;
     head_s = -1;
     elapsed = 0;
@@ -39,7 +39,7 @@ bool Disk::operate(DiskOp op, int param)
         elapsed = tokenG + 1;
         phase_end = true;
         break;
-    case PASS:           //OPT 根据标签读取热值判断走or不走
+    case PASS: // OPT 根据标签读取热值判断走or不走
         if (param >= 1)
         {
             if (elapsed + param > tokenG)
@@ -102,11 +102,11 @@ void Disk::del_obj(Object &info)
     {
         throw std::invalid_argument("del_obj failed,No object id in this disk");
     }
-    Replica *replica = replicas[object_id]; // 找到对应的副本
-    vector<int> temp_free_units;                   // 存放空闲碎片
-    vector<pair<int, int>> temp_free_blocks;       // 存放合并空闲碎片后的空闲区间
+    Replica *replica = replicas[object_id];  // 找到对应的副本
+    vector<int> temp_free_units;             // 存放空闲碎片
+    vector<pair<int, int>> temp_free_blocks; // 存放合并空闲碎片后的空闲区间
     /*----------开始释放磁盘----------*/
-    for (int i=0;i<size;i++)
+    for (int i = 0; i < size; i++)
     {
         int addr = replica->addr_part[i];
         // assert(blocks[i] != nullptr);
@@ -159,81 +159,114 @@ void Disk::wrt_obj(Object &info)
     int obj_id = info.id;
     int size = info.size;
     // 直接尝试写入一个新的 对象
-    replicas[obj_id] = new Replica{info};//初始化 注意part中全为0，使用需要根据size判断
-    Replica* replica = replicas[obj_id];
+    replicas[obj_id] = new Replica{info}; // 初始化 注意part中全为0，使用需要根据size判断
+    Replica *replica = replicas[obj_id];
     int current_write_point = 0;
     int temp_write_point = 0;
     typedef list<pair<int, int>>::iterator p_it; // 记录暂存时所选择空闲块的迭代器
     vector<pair<p_it, int>> temp_operate;        // 记录暂存空闲块与块大小
+    pair<p_it, int> not_discret_write;
+    int MODE_FLAG = DISCRET_MODE;
+    /* 进行写入模式判断 完全写入、富余写入、分段写入 */
     for (auto it = free_blocks.begin(); it != free_blocks.end(); it++)
     {
         int free_block_size = it->second - it->first + 1; // 当前空闲块的空间
-        /*--------找到可连续存储块时 放弃分块暂存 直接存储--------*/
-        if (free_block_size >= size)
+        if (free_block_size == size)
         {
-            for (int i = 0; i < size; i++)
-            {
-                // assert(blocks[it->first + i] == nullptr);
-                blocks[it->first + i] = std::make_pair(obj_id,i);        // 磁盘单元指向对应的unit
-                replica->addr_part[current_write_point]=it->first+i;
-                // map_obj_part_addr[replica->id][current_write_point] = it->first + i; // 写入该副本的对象块在次磁盘中的位置
-                current_write_point++;
-            }
-            if (free_block_size == size)
-            { // 若空闲块被填满，则删除该空闲块节点
-                free_blocks.erase(it);
-            }
-            else
-            { // 若空闲块没有被填满，则修改该空闲块区间头
-                it->first += size;
-            }
-            assert(current_write_point == size);
-            return;
+            MODE_FLAG = COMPLET_MODE;
+            not_discret_write = make_pair(it, size);
+            break;
         }
-        /*--------进行分块暂存记录 以防无法连续存储---------*/
-        if (temp_write_point != size)
+        else if (free_block_size > size && free_block_size >= 6)
         {
-            int not_write_size = size - temp_write_point; // 仍未存入的对象块大小
-            // 标记暂存空间块使用情况 填满空闲块：填入剩余对象块剩余空间
-            if (not_write_size >= free_block_size)
-            {
-                temp_operate.emplace_back(it, free_block_size);
-                temp_write_point += free_block_size;
-            }
-            else
-            {
-                temp_operate.emplace_back(it, not_write_size);
-                temp_write_point += not_write_size;
-            }
-        }
-    }
-    /*-------------使用暂存操作---------------*/
-    for (auto it : temp_operate)
-    {
-        for (int i = 0; i < it.second; i++)
-        {
-            // assert(blocks[it.first->first + i] == nullptr);
-            blocks[it.first->first + i] = std::make_pair(obj_id,current_write_point);
-            replica->addr_part[current_write_point]=it.first->first + i;
-            // map_obj_part_addr[replica->id][current_write_point] = it.first->first + i;
-            current_write_point++;
-        }
-        int free_block_size = it.first->second - it.first->first + 1;
-        if (it.second == free_block_size)
-        { // 如果填满了整个空闲块，则删除该空闲块
-            free_blocks.erase(it.first);
+            MODE_FLAG = MAXFREE_MODE;
+            not_discret_write = make_pair(it, size);
         }
         else
-        { // 否则修改空闲块的起始位置
-            it.first->first += it.second;
+        {
+            /*--------进行分块暂存记录 以防无法连续存储  ---------*/
+            // TODO 改为优先使用碎片中的大号
+            if (temp_write_point != size)
+            {
+                int not_write_size = size - temp_write_point; // 仍未存入的对象块大小
+                // 标记暂存空间块使用情况 填满空闲块：填入剩余对象块剩余空间
+                if (not_write_size >= free_block_size)
+                {
+                    temp_operate.emplace_back(it, free_block_size);
+                    temp_write_point += free_block_size;
+                }
+                else
+                {
+                    temp_operate.emplace_back(it, not_write_size);
+                    temp_write_point += not_write_size;
+                }
+            }
         }
     }
-    assert(current_write_point == size);
+    /* 开始按照模式进行存储 */
+    switch (MODE_FLAG)
+    {
+    case COMPLET_MODE:
+    {
+        p_it complet_block = not_discret_write.first; // it为所操作空闲块的迭代器
+        int com_free_block_size = complet_block->second - complet_block->first + 1;
+        assert(size == com_free_block_size);
+        for (int i = 0; i < size; i++)
+        {
+            blocks[complet_block->first + i] = std::make_pair(obj_id, i);
+            replica->addr_part[i] = complet_block->first + i;
+        }
+        free_blocks.erase(complet_block); // 完全写入模式中进行节点删除
+        break;
+    }
+    case MAXFREE_MODE:
+    {
+        p_it maxfree_block = not_discret_write.first;
+        int max_free_block_size = maxfree_block->second - maxfree_block->first + 1;
+        assert(size < max_free_block_size);
+        for (int i = 0; i < size; i++)
+        {
+            blocks[maxfree_block->first + i] = std::make_pair(obj_id, i);
+            replica->addr_part[i] = maxfree_block->first + i;
+        }
+        maxfree_block->first += size; // 富余写入模式中进行节点修改
+        break;
+    }
+    case DISCRET_MODE:
+    {
+        for (auto it : temp_operate)
+        {
+            int operate_write_size = it.second;
+            p_it temp_operate_block = it.first;
+            for (int i = 0; i < operate_write_size; i++)
+            {
+                blocks[temp_operate_block->first + i] = std::make_pair(obj_id, current_write_point);
+                replica->addr_part[current_write_point] = temp_operate_block->first + i;
+                current_write_point++;
+            }
+            int free_block_size = temp_operate_block->second - temp_operate_block->first + 1;
+            if (operate_write_size == free_block_size)
+            { // 如果填满了整个空闲块，则删除该空闲块
+                free_blocks.erase(temp_operate_block);
+            }
+            else
+            { // 否则修改空闲块的起始位置
+                temp_operate_block->first += operate_write_size;
+            }
+        }
+        break;
+    }
+    default:
+    {
+        throw std::runtime_error("Error:  Write Mode Error");
+        break;
+    }
+    }
     return;
 }
 std::pair<int, int> Disk::get_block(int addr)
 {
-	return blocks[addr].value();//为空直接报错
+    return blocks[addr].value(); // 为空直接报错
 }
 /*
  *计算总剩余空间大小
@@ -247,21 +280,22 @@ int Disk::numberOfFreeBlocks_()
     }
     return all_free_size;
 }
-//调用者自行判断对象指针是否为nullptr(不存在或被删除)
+// 调用者自行判断对象指针是否为nullptr(不存在或被删除)
 Replica *Disk::get_replica(int obj_id)
 {
-	return replicas[obj_id];
+    return replicas[obj_id];
 }
 
 vector<int> Disk::get_store_pos(int obj_id)
 {
-    Replica* rep = replicas[obj_id];
+    Replica *rep = replicas[obj_id];
     int size = rep->info.size;
     vector<int> addrs;
-    for(int i=0;i<size;i++){
+    for (int i = 0; i < size; i++)
+    {
         addrs.push_back(rep->addr_part[i]);
     }
-	return addrs;
+    return addrs;
 }
 
 // 刷新到下一帧 更新elapsed phase_end 清除完成的req

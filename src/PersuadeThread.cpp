@@ -129,7 +129,7 @@ void PersuadeThread::excute_find()
         if (disk->elapsed + distance + 64 > tokenG)    //这里jump没问题吗？
             disk->operate(JUMP, *it_addr);
         else
-        {   
+        {
             if (distance <= 4){
                 int pass_cus = distance + read_custom(64, task_len);
                 int read_cus = read_custom(disk->head_s, distance + task_len);

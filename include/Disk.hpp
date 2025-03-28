@@ -2,6 +2,10 @@
 #ifndef DISK_HPP
 #define DISK_HPP
 
+#define COMPLET_MODE 1
+#define MAXFREE_MODE 2
+#define DISCRET_MODE 3
+
 #include <vector>
 #include <list>
 #include <string>
