@@ -65,7 +65,7 @@ bool Disk::operate(DiskOp op, int param)
                 head_s = 1;
                 elapsed += param;
                 phase_end = true;
-                return false;
+                return true;
             }
             string s(param, 'p');
             upload_info.append(s);
@@ -96,6 +96,7 @@ bool Disk::operate(DiskOp op, int param)
             upload_info+="r";
             // printf("r");
             head++;
+            head = head % volume;
             return true;
         }
         break;
@@ -122,8 +123,8 @@ string Disk::wrt_replica(Object &info)
     Replica *replica = replicas[info.id];
     vector<int> addrs;
     int idx_tag = info.tag -1; // tag从1开始 作索引使用时-1
-    if (getRegionSpace(info.tag) >= info.size)
-        addrs = regions[idx_tag].use_space(replica);
+    if (regions[idx_tag].free_blocks_size >= info.size)
+        addrs = regions[idx_tag].use_space(info.size);
     else
     {
         int region_idx = 0;
@@ -134,7 +135,7 @@ string Disk::wrt_replica(Object &info)
             if (regions[i].free_blocks_size > regions[region_idx].free_blocks_size)
                 region_idx = i;
         }
-        addrs = regions[region_idx].use_space(replica);
+        addrs = regions[region_idx].use_space(info.size);
     }
     string s = to_string(id+1);//盘号（注意从1开始) + 对象各块存储位置
     for(int i = 0; i < info.size; i++){
@@ -154,7 +155,15 @@ void Disk::del_replica(Object &info)
     int part1_addr = replicas[info.id]->addr_part[0];
     int idx_region = get_regionIndix(part1_addr);
     replicas[info.id] = nullptr;
-    regions[idx_region].free_space(replica);
+    vector<int> addrs;
+    addrs.reserve(info.size);
+    for(int i = 0;i<info.size;i++){
+        addrs.push_back(replica->addr_part[i]);
+        blocks[replica->addr_part[i]].used = false;
+        blocks[replica->addr_part[i]].obj_id = -1;
+        blocks[replica->addr_part[i]].part = -1;
+    }
+    regions[idx_region].free_space(addrs);
     delete(replica);
 }
 //!! 这里一定要填tag 从1开始的tag 而不是转换的索引

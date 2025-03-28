@@ -1,4 +1,4 @@
-// System.cpp
+#define DO_UPLOAD true
 #include "System.hpp"
 
 using namespace std;
@@ -182,7 +182,7 @@ void System::label_oriented_storge()
 
 void System::upload(string s)
 {
-    if (doUpload)
+    if (DO_UPLOAD)
         printf("%s", s.c_str());
 }
 

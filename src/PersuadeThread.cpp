@@ -84,6 +84,8 @@ void PersuadeThread::excute_find()
                 // if(map_obj_requests.find(obj_id) != map_obj_requests.end())
                 // {
                     // int part = disk->blocks[*it_addr].value().second;
+                    // 存对象-> 添加请求 -> 迭代到对应请求块地址 -> 此时发现请求不存在了
+                    bool condition = map_obj_requests.find(obj_id) == map_obj_requests.end();
                     assert(map_obj_requests.find(obj_id) != map_obj_requests.end());
                     for(auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                     {

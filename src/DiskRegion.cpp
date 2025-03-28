@@ -1,5 +1,5 @@
 #include "DiskRegion.hpp"
-
+#define DEBUG_MODE true
 using namespace std;
 DiskRegion::DiskRegion(int start, int end) : region_start(start), region_end(end), free_blocks_size(end - start + 1)
 {
@@ -9,277 +9,328 @@ DiskRegion::DiskRegion(int start, int end) : region_start(start), region_end(end
 	// 初始化第一个区域
 	SectionList.push_back(node);
 	SectionSet[temp_key].insert(node);
-	check_size_leagal(0);
+	illegal_check("DiskRegion constructor check size legal");
 }
-
-void DiskRegion::check_section_list()
+void DiskRegion::illegal_check(string text)
 {
-	// if (SectionList.empty())
-	// {
-	// 	std::cout << "SectionList is empty." << std::endl;
-	// 	return;
-	// }
-
-	// auto prev_it = SectionList.begin();
-	// auto current_it = std::next(prev_it);
-
-	// while (current_it != SectionList.end())
-	// {
-	// 	if ((*current_it)->start == (*prev_it)->start)
-	// 	{
-	// 		std::cout << "Error: Node at position " << std::distance(SectionList.begin(), current_it)
-	// 				  << " has start value " << (*current_it)->start
-	// 				  << " which is not less than the previous node's start value " << (*prev_it)->start
-	// 				  << std::endl;
-	// 	}
-	// 	prev_it = current_it;
-	// 	++current_it;
-	// }
+	check_list_order(text);
+	check_list_length(text);
+	check_set_key(text);
 }
-void DiskRegion::check_section_list_error()
+void DiskRegion::check_list_order(string text)
 {
-	// int total_length = 0;
-	// for (const auto &node : SectionList)
-	// {
-	// 	total_length += node->end - node->start + 1;
-	// }
-
-	// if (total_length != free_blocks_size)
-	// {
-	// 	std::cout << "Error: Total length of sections (" << total_length
-	// 			  << ") does not match free_blocks_size (" << free_blocks_size << ")." << std::endl;
-	// }
-}
-void DiskRegion::check_size_leagal(int flag){
-	// for(int i=1;i<=5;i++){
-	// 	if(SectionSet[i].size() == 0) continue;
-	// 	for(auto it = SectionSet[i].begin(); it != SectionSet[i].end(); it++){
-	// 		if((*it)->end - (*it)->start + 1 != i){
-	// 			std::cout << "Error: size of section is not legal" << std::endl;
-	// 		}
-	// 	}
-	// }
-	// if(SectionSet[6].size() == 0) return;
-	// for(auto it = SectionSet[6].begin(); it != SectionSet[6].end(); it++){
-	// 	if((*it)->end - (*it)->start + 1 <= 5){
-	// 		std::cout << "Error: size of section is not legal" << std::endl;
-	// 	}
-	// }
-}
-/// @brief 分配副本大小的空闲区域，调整muiltimap
-/// @param rep
-vector<int> DiskRegion::use_space(Replica *rep)
-{
-	check_section_list();
-	check_section_list_error();
-	check_size_leagal(1);
-	int wirte_mode_flag;
-	vector<int> result;
-	int rep_size = rep->info.size;
-	assert(rep_size <= free_blocks_size);
-
-	/* 进行写入策略判断 */
-	wirte_mode_flag = get_write_mode_flag(rep_size);
-
-	/* 按照模式进行写入 */
-	if (wirte_mode_flag == COMPLET_WRITE)
+	if (SectionList.empty())
 	{
-		assert(SectionSet[rep_size].size() > 0);
-		// auto &write_area_set = SectionSet[rep_size];
-		auto write_area_it = SectionSet[rep_size].begin();
-		for (int i = 0; i < rep_size; i++)
-		{
-			result.emplace_back((*write_area_it)->start + i);
-		}
-		SectionList.remove(*write_area_it);
-		SectionSet[rep_size].erase(write_area_it);
-		free_blocks_size -= rep->info.size; // 维护空闲块的总数量
-		check_section_list();
-		check_section_list_error();
-		check_size_leagal(2);
-		bool t = 1;
+		return;
 	}
-	else if (wirte_mode_flag == MAXFREE_WRITE)
+
+	auto prev_it = SectionList.begin();
+	auto current_it = std::next(prev_it);
+
+	while (current_it != SectionList.end())
 	{
-		assert(SectionSet[MAX_FREE_BLOCK_KEY].size() > 0);
-		// auto &write_area_set = SectionSet[MAX_FREE_BLOCK_KEY];
-		auto write_area_it = SectionSet[MAX_FREE_BLOCK_KEY].begin();
-		for (int i = 0; i < rep_size; i++)
+		if ((*current_it)->start <= (*prev_it)->start)
 		{
-			result.emplace_back((*write_area_it)->start + i);
+			cout << text << endl;
+			throw std::range_error("Error:Ordering\nNode" + std::to_string(std::distance(SectionList.begin(), current_it)) +
+								   " start at" + std::to_string((*current_it)->start) +
+								   " but prev start at" + std::to_string((*prev_it)->start));
 		}
-		(*write_area_it)->start += rep_size; // 修改区域起始地址
-		check_size_leagal(3);
-		int new_key = (*write_area_it)->end - (*write_area_it)->start + 1;
-		if (new_key < MAX_FREE_BLOCK_KEY) // 若新的空闲块小于MAX_FREE_BLOCK_KEY，则插入到对应的set中
-		{
-			shared_ptr<ListNode> new_node = *write_area_it;
-			auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
-			SectionList.insert(it, new_node);
-			SectionList.remove(*write_area_it);
-			SectionSet[new_key].insert(new_node);
-			check_size_leagal(4);
-			SectionSet[MAX_FREE_BLOCK_KEY].erase(write_area_it);
-			check_size_leagal(5);
-		}
-		free_blocks_size -= rep->info.size; // 维护空闲块的总数量
-		check_section_list();
-		check_section_list_error();
-		check_size_leagal(6);
-		bool t = 1;
+		prev_it = current_it;
+		++current_it;
 	}
-	else if (wirte_mode_flag == DISCRET_WRITE)
+}
+void DiskRegion::check_list_length(string text)
+{
+	int total_length = 0;
+	for (const auto &node : SectionList)
 	{
-		int remain_size = rep_size;
-		vector<pair<shared_ptr<ListNode>, int>> temp_opt; // shared_ptr<ListNode>:存储写入区域 int写入个数
-		assert(SectionSet[MAX_FREE_BLOCK_KEY].size() == 0 && SectionSet[rep_size].size() == 0);
-		// 考虑没有1的空闲块
-		if (rep_size == 1)
+		total_length += node->end - node->start + 1;
+	}
+
+	if (total_length != free_blocks_size)
+	{
+		cout << text << endl;
+		throw std::range_error("Error:Length\ntotal length of section is " + to_string(total_length) +
+							   " but free_blocks_size is " + to_string(free_blocks_size));
+	}
+}
+void DiskRegion::check_set_key(string text)
+{
+	for (int i = 1; i <= 5; i++)
+	{
+		if (SectionSet[i].size() == 0)
+			continue;
+		for (auto it = SectionSet[i].begin(); it != SectionSet[i].end(); it++)
 		{
-			int temp_key = 2;
-			while (SectionSet[temp_key].size() == 0)
+			int start = (*it)->start;
+			int end = (*it)->end;
+			int len = end - start + 1;
+			if (len != i)
 			{
-				temp_key++;
-			}
-			auto write_area_it = SectionSet[temp_key].begin();
-			result.emplace_back((*write_area_it)->start);
-			(*write_area_it)->start++;
-			shared_ptr<ListNode> new_node = *write_area_it;
-			auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
-			SectionList.insert(it, new_node);
-			SectionList.remove(*write_area_it);
-			SectionSet[new_node->end - new_node->start + 1].insert(new_node);
-			check_size_leagal(7);
-			SectionSet[temp_key].erase(write_area_it);
-			check_size_leagal(8);
-			free_blocks_size -= rep_size;
-			check_section_list();
-			check_section_list_error();
-			check_size_leagal(9);
-			bool t = 1;
-			return result;
-		}
-		assert(rep_size != 1);
-		for (int discret_key = 5; remain_size > 0; discret_key--) // 进行离散存储选择
-		{
-			assert(discret_key >= 1);
-			if (SectionSet[discret_key].size() == 0)
-				continue;
-			for (auto write_area_it = SectionSet[discret_key].begin(); write_area_it != SectionSet[discret_key].end(); write_area_it++)
-			{
-				if (remain_size - discret_key > 0)
-					temp_opt.emplace_back(*write_area_it, discret_key);
-				else if (remain_size - discret_key <= 0)
-					temp_opt.emplace_back(*write_area_it, remain_size);
-				remain_size -= discret_key;
-				if (remain_size <= 0)
-					break;
+				cout << text << endl;
+				throw std::range_error("Error:setkey\nsection (" + to_string(start) + "~" + to_string(end) + ")" +
+									   "length is" + to_string(len) + "but in SectionSet[" + to_string(i) + "]");
 			}
 		}
-		for (int i = 0; i < temp_opt.size() - 1; i++) // 执行离散存储
+	}
+	if (SectionSet[6].size() == 0)
+		return;
+	for (auto it = SectionSet[6].begin(); it != SectionSet[6].end(); it++)
+	{
+		if ((*it)->end - (*it)->start + 1 <= 5)
 		{
-			for (int j = temp_opt[i].first->start; j <= temp_opt[i].first->end; j++)
-			{
-				result.emplace_back(j);
-			}
-			auto temp_write_area_it = SectionSet[temp_opt[i].second].find(temp_opt[i].first);
-			assert(temp_write_area_it != SectionSet[temp_opt[i].second].end());
-			SectionList.remove(*temp_write_area_it);
-			SectionSet[temp_opt[i].second].erase(temp_write_area_it);
-			check_size_leagal(10);
+			cout << text << endl;
+			throw std::range_error("size of sectionset not matching its key");
 		}
-		for (int j = temp_opt.back().first->start; j <= temp_opt.back().first->end; j++) // 最后的地址单独处理
-		{
-			result.emplace_back(j);
-		}
-		int last_opt_key = temp_opt.back().first->end - temp_opt.back().first->start + 1; // 最后的使用的空闲块移动位置
-		auto temp_write_area_it = SectionSet[last_opt_key].find(temp_opt.back().first);
-		check_section_list();
-		check_section_list_error();
-		check_size_leagal(11);
-		assert(temp_write_area_it != SectionSet[last_opt_key].end());
-		shared_ptr<ListNode> new_node = *temp_write_area_it;
-		auto it = lower_bound(SectionList.begin(), SectionList.end(), new_node); // 找到插入位置
-		SectionList.insert(it, new_node);
-		SectionList.remove(*temp_write_area_it);
-		assert(last_opt_key!=temp_opt.back().second);
-		SectionSet[last_opt_key - temp_opt.back().second].insert(new_node);
-		check_size_leagal(12);
-		SectionSet[last_opt_key].erase(temp_write_area_it);
-		check_size_leagal(13);
-		free_blocks_size -= rep->info.size; // 维护空闲块的总数量
-		check_section_list();
-		check_section_list_error();
-		check_size_leagal(14);
-		bool t = 1;
+	}
+}
+void DiskRegion::check_set_size(std::string text)
+{
+	int sum =0;
+	for(int i=1;i<=6;i++){
+		sum+=SectionSet[i].size() * i;
+	}
+	if(sum!=free_blocks_size)
+	throw std::range_error("size of sectionset not matching its key");
+}
+// 同时新往list与set中插入新section
+void DiskRegion::insert_section(shared_ptr<ListNode> section)
+{
+	int len = section->end - section->start + 1;
+	int insert_key = min(len, 6);
+	SectionSet[insert_key].insert(section);
+	auto it_pos = lower_bound(SectionList.begin(), SectionList.end(), section, [](const shared_ptr<ListNode> &a, const shared_ptr<ListNode> &b)
+							  { return a->start < b->start; });
+	SectionList.insert(it_pos, section);
+	free_blocks_size += len;
+}
+// 从set和list中删除section
+// 注意Section由智能指针控制自动释放
+void DiskRegion::delete_section(shared_ptr<ListNode> section)
+{
+	if (DEBUG_MODE)
+	{
+		auto it_list = find_iter_of_section(section);
+		assert(it_list != SectionList.end());
+		int key = min(section->end - section->start + 1, 6);
+		assert(SectionSet[key].find(section) != SectionSet[key].end());
+	}
+	SectionList.remove(section);
+	int len = section->end - section->start + 1;
+	int set_key = min(len, 6);
+	int set_erase_num = SectionSet[set_key].erase(section);
+	assert(set_erase_num != 0);
+	free_blocks_size -= len;
+}
+// 需要section已在list与set中，进行调整（对于set会移动位置）,并改变free_blocks_size
+void DiskRegion::resize_section(shared_ptr<ListNode> section, int new_start, int new_end)
+{
+	if (section->start == new_start && section->end == new_end) {
+		return;
+	}
+	if(DEBUG_MODE){
+		auto it_list = find_iter_of_section(section);
+		assert(it_list != SectionList.end());
+		int key = min(section->end - section->start + 1, 6);
+		assert(SectionSet[key].find(section) != SectionSet[key].end());
+	}
+	int old_len = section->end - section->start + 1;
+	int new_len = new_end - new_start + 1;
+	int old_key = min(old_len, 6);
+	int new_key = min(new_len, 6);
+	int set_erase_num = this->SectionSet[old_key].erase(section);
+	assert(set_erase_num != 0);
+	section->start = new_start;
+	section->end = new_end;
+	SectionSet[new_key].insert(section);
+	free_blocks_size += new_len - old_len;
+}
+// 输入section，与请求使用的大小，返回存放的地址向量,并重设section大小
+vector<int> DiskRegion::use_section(shared_ptr<ListNode> section, int size)
+{
+	if(DEBUG_MODE){
+		auto it_list = find_iter_of_section(section);
+		assert(it_list != SectionList.end());
+		int key = min(section->end - section->start + 1, 6);
+		assert(SectionSet[key].find(section) != SectionSet[key].end());
+	}
+	vector<int> addrs;
+	addrs.reserve(size);
+	int start = section->start;
+	int end = section->end;
+	int len = end - start + 1;
+	if (size > len)
+		throw std::range_error("section size smaller than request");
+	for (int i = 0; i < size; i++)
+	{
+		addrs.push_back(start + i);
+	}
+	if (len == size)
+	{
+		delete_section(section);
 	}
 	else
 	{
-		throw invalid_argument("Invalid write mode flag");
+		resize_section(section, start + size, end);
 	}
-	
-	check_section_list();
-	check_section_list_error();
-	check_size_leagal(15);
+	return addrs;
+}
+// 查找section在list中的位置 找不到会报错
+list<std::shared_ptr<ListNode>>::iterator DiskRegion::find_iter_of_section(shared_ptr<ListNode> section)
+{
+	auto it_sec = SectionList.begin();
+	while (*it_sec != section)
+	{
+		it_sec++;
+		if (it_sec == SectionList.end())
+			throw std::range_error("section not found");
+	}
+	return it_sec;
+}
+// 这里要求section已在list中
+void DiskRegion::merge_neighbors(shared_ptr<ListNode> section)
+{
+	auto it_sec = find_iter_of_section(section);
+	list<std::shared_ptr<ListNode>>::iterator it_lnode;
+	list<std::shared_ptr<ListNode>>::iterator it_rnode;
+	int new_start = (*it_sec)->start;
+	int new_end = (*it_sec)->end;
+	if (it_sec != SectionList.begin())
+	{
+		it_lnode = prev(it_sec);
+		if ((*it_lnode)->end + 1 == (*it_sec)->start)
+		{
+			new_start = (*it_lnode)->start;
+			delete_section(*it_lnode);
+		}
+	}
+	it_rnode = next(it_sec);
+	if (it_rnode != SectionList.end())
+	{
+		if ((*it_sec)->end + 1 == (*it_rnode)->start)
+		{
+			new_end = (*it_rnode)->end;
+			delete_section(*it_rnode);
+		}
+	}
+	resize_section(*it_sec, new_start, new_end);
+}
+
+vector<int> DiskRegion::use_space(int size)
+{
+	if (free_blocks_size < size)
+		throw invalid_argument("has no enough size");
+	illegal_check("use_space start");
+	vector<int> result;
+	if (size > 5 || size < 1)
+	{
+		throw std::range_error("size of obj impossible");
+	}
+	if (size > free_blocks_size)
+	{
+		throw std::logic_error("can't alloc enough space");
+	}
+	/* 恰好存下 */
+	if (SectionSet[size].size() != 0)
+	{
+		shared_ptr<ListNode> section = *(SectionSet[size].begin());
+		vector<int> addrs = use_section(section, size);
+		illegal_check("use_space perfect");
+		return addrs;
+	}
+	/* 使用最大空间存 */
+	if (SectionSet[6].size() != 0)
+	{
+		shared_ptr<ListNode> section = *SectionSet[6].begin();
+		vector<int> addrs = use_section(section, size);
+		illegal_check("use_space max_section");
+		return addrs;
+	}
+	/* 使用多个小于6的块存 */
+	vector<shared_ptr<ListNode>> to_insert_sections;
+	to_insert_sections.reserve(size);
+	int remain = size;
+	int curent_key = 5;
+	auto it = SectionSet[curent_key].begin();
+	while (remain > 0)
+	{
+		if (it == SectionSet[curent_key].end())
+		{
+			curent_key--;
+			it = SectionSet[curent_key].begin();
+			continue;
+		}
+		else
+		{
+			to_insert_sections.push_back(*it);
+			assert((*it)->end - (*it)->start + 1 == curent_key);
+			remain -= curent_key;
+			++it;
+		}
+	}
+	for (int i = 0; i < to_insert_sections.size()-1;i++) {
+		auto node = to_insert_sections[i];
+		int len = node->end - node->start +1;
+		vector<int> addrs = use_section(node, len);
+		result.insert(result.end(), addrs.begin(), addrs.end());
+	}
+	/* 最后一个只使用部分长度 */
+	auto node = to_insert_sections.back();
+	int len = node->end - node->start + 1;
+vector<int> addrs = use_section(node, remain+len);
+	result.insert(result.end(), addrs.begin(), addrs.end());
+	sort(result.begin(), result.end());
+	illegal_check("use_space end");
 	return result;
 }
 
-void DiskRegion::free_space(Replica *rep)
+void DiskRegion::free_space(vector<int> &addrs)
 {
 	// 新增释放的空间
 	// 尝试合并相邻块
 	// 根据合成成功与否 删除或添加块
 	// 将链表的操作同步到set中
 	// 更新空闲块数量的记录
-	check_section_list();
-	check_section_list_error();
-	check_size_leagal(16);
-	assert(rep != nullptr);
-	int addr = rep->addr_part[0];
+	illegal_check("free_space start");
+	int size = addrs.size();
+	if (size == 0)
+		throw invalid_argument("try to free no space");
+	if (size == 1)
+	{
+		shared_ptr<ListNode> new_sec = make_shared<ListNode>(addrs[0], addrs[0]);
+		insert_section(new_sec);
+		merge_neighbors(new_sec);
+		illegal_check("free_space after free 1");
+		return;
+	}
+	int addr = addrs[0];
 	int start = addr;
 	int end = addr;
-	vector<pair<int, int>> to_insert_sections;
-	to_insert_sections.reserve(rep->info.size);
+	vector<shared_ptr<ListNode>> to_insert_sections;
+	to_insert_sections.reserve(size);
 	/* 合并空闲空间 减少操作次数 */
-	for (size_t i = 1; i < rep->info.size; i++)
+	for (size_t i = 1; i < size; i++)
 	{
-		addr = rep->addr_part[i];
+		addr = addrs[i];
 		if (addr == end + 1)
 			end = addr;
 		else
 		{
-			int size_key = min(end - start + 1, 6);
-			to_insert_sections.emplace_back(start, end);
+
+			to_insert_sections.push_back(make_shared<ListNode>(start, end));
 			start = addr;
 			end = addr;
 		}
 	}
-	to_insert_sections.emplace_back(start, end); // 结尾空间单独插入（整个为一个区间也在此插入）
+	to_insert_sections.push_back(make_shared<ListNode>(start, end)); // 结尾空间单独插入（整个为一个区间也在此插入）
 	for (auto &section : to_insert_sections)
 	{
-		shared_ptr<ListNode> new_node = make_shared<ListNode>(section.first, section.second);
-		SectionList.push_back(new_node);
+		insert_section(section);
+		merge_neighbors(section);
 	}
-	SectionList.sort([](const std::shared_ptr<ListNode>& a, const std::shared_ptr<ListNode>& b) {
-        return a->start < b->start;
-    });
-	for(auto it = SectionList.begin(); it != SectionList.end();){
-		auto next_it = next(it);
-		if(next_it == SectionList.end()) break;
-		if((*it)->end == (*next_it)->start - 1){
-			int temp_next_key = min((*next_it)->end - (*next_it)->start + 1, 6);
-			int temp_end = (*next(it))->end;;
-			SectionSet[temp_next_key].erase((*next_it));
-			(*it)->end = temp_end;
-			int temp_new_key = min((*it)->end - (*it)->start + 1, 6);
-			SectionSet[temp_new_key].insert(*it);
-			SectionList.erase(next_it);
-		}
-		else{
-			it++;
-		}
-	}
-	free_blocks_size += rep->info.size;
+	// free_blocks_size += size;
+	illegal_check("free_space end");
 }
 
 int DiskRegion::get_write_mode_flag(int size)
