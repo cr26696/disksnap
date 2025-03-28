@@ -39,7 +39,7 @@ bool Disk::operate(DiskOp op, int param)
         elapsed = tokenG + 1;
         phase_end = true;
         break;
-    case PASS:
+    case PASS:           //OPT 根据标签读取热值判断走or不走
         if (param >= 1)
         {
             if (elapsed + param > tokenG)

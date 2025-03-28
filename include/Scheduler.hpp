@@ -18,7 +18,8 @@ class Scheduler
 {
 private:
     static Scheduler *instance;
-
+	Disk *disk;
+    
     std::unordered_map<int, std::vector<int>> active_requests; // 对象编号，请求当前对象的所有活跃请求id
     Scheduler();
     std::mutex mutex_;

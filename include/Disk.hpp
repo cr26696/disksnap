@@ -28,6 +28,9 @@ enum DiskOp
 
 class Disk
 {
+    friend class DiskManager;
+    friend class PersuadeThread;
+    friend class Scheduler;
 private:
     int head_s;                                               // 磁头上个操作 -1初始化 0刚jump过 >0
     // std::optional<std::pair<int, int>> blocks[MAX_DISK_SIZE]; // 对象id 对象的块序号
