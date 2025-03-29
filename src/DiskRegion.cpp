@@ -149,6 +149,7 @@ void DiskRegion::resize_section(shared_ptr<ListNode> section, int new_start, int
 // 输入section，与请求使用的大小，返回存放的地址向量,并重设section大小
 vector<int> DiskRegion::use_section(shared_ptr<ListNode> section, int size)
 {
+	//OPT 如标签区域已满，向相邻标签区域存储
 	if(DEBUG_MODE){
 		auto it_list = find_iter_of_section(section);
 		assert(it_list != SectionList.end());

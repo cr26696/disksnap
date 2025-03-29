@@ -30,6 +30,7 @@ public:
     std::vector<int> get_complete_reqs_id();
     void excute_find();
     std::string getUploadInfo();
+    double job_rating(std::vector<int> addrs,int job_center);
     void end();
 };
 

@@ -8,23 +8,17 @@ PersuadeThread::PersuadeThread(Disk *disk_ptr) : disk(disk_ptr)
 }
 
 // 创建任务 添加到活跃任务
-void PersuadeThread::add_req(int req_id, Object &info)
+void PersuadeThread::add_req(Request *req)
 {
-    Request *req = new Request(req_id, info.id, info.size);
-    Replica *rep = disk->get_replica(info.id);
-    // req->init_status(map_obj_replica[obj_id]->size);
-    // 在wrt_obj时已确保set初始化
-    // unordered_set<Request *> &relative_reqs = map_obj_request[obj_id];
-    // relative_reqs.insert(req);
-    // 请求
-    // task_requests.push_back(req);
-    // 请求对应的块
-    for (int i = 0; i < info.size; i++)
+    Replica *replica = disk->get_replica(req->object_id);
+    for (int i = 0; i < req->size; i++)
     {
-        int addr = rep->addr_part[i];
+        int addr = replica->addr_part[i];
+        req->req_units[i].addr = addr;
+        req->req_units[i].pDisk = disk;
         task_blocks.insert(addr);
     }
-    map_obj_requests[info.id].push_back(req);
+    map_obj_requests[req->object_id].push_back(req);
     job_count++;
     // 不排序，添加到待找块中
 }
@@ -87,8 +81,8 @@ void PersuadeThread::excute_find()
                     assert(map_obj_requests.find(obj_id) != map_obj_requests.end());
                     for(auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                     {
-                        (*req)->complete[part] = true;
-                        if ((*req)->is_complete())//OPT 改为全部找完进行判定上报
+                        (*req)->req_units[part].complete = true;
+                        if ((*req)->is_complete())
                         {
                             complete_requests.push_back(*req);
                             job_count--;

@@ -17,7 +17,6 @@
 #include <utility>
 #include <optional>
 #include "MetaDefine.hpp"
-#include "Request.hpp"
 #include "Replica.hpp"
 #include "Object.hpp"
 #include "DiskRegion.hpp"

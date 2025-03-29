@@ -35,8 +35,7 @@ bool Scheduler::add_request(int req_id, int obj_id)
     DiskManager &DM = DiskManager::getInstance();
     Object &obj = DM.objects[obj_id];
     
-    // OPT 选盘优化（可以加入工作强度选择磁盘->负载均衡）
-    // 通过距离选择磁盘(存在分块且开始地址不一定最小)
+    
     int ideal_id = obj.diskid_replica[0];
     int min_distance;
     for (int i = 0; i < REP_NUM; i++)
@@ -47,7 +46,7 @@ bool Scheduler::add_request(int req_id, int obj_id)
         Replica* rep = target_disk->get_replica(obj_id);
         
         // 计算对象在该磁盘上的起始位置（取第一个块地址）
-        int obj_start_addr = rep->addr_part[0];   //第一个不一定储存在最前面...
+        int obj_start_addr = rep->addr_part[0];   //OPT第一个不一定储存在最前面...
         int disk_head = target_disk->head;
         int volume = target_disk->volume;
         int distance = (obj_start_addr - disk_head + volume) % volume;
@@ -63,7 +62,8 @@ bool Scheduler::add_request(int req_id, int obj_id)
         }
     }
     // 选好线程，调用添加任务函数
-    job_threads[ideal_id].add_req(req_id, obj);
+    Request *req = new Request(req_id, obj.id, obj.size);
+    job_threads[ideal_id].add_req(req);
 
     return true; // 假设添加总是成功
 }
@@ -119,6 +119,15 @@ string Scheduler::getUploadInfo()
         info += to_string(req_id) + "\n";
     }
     return info;
+}
+
+double Scheduler::job_rating(vector<int> addrs,int job_center)
+{
+    //TODO 评分函数
+    //去拿各个盘副本 拿到各块地址
+    //考虑对象各块分散度
+    //与3重心距离，2磁头前后，1任务负载的分段函数） 得一评分 任务下发依据这个评分
+	return 0.0;
 }
 
 void Scheduler::end()

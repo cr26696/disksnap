@@ -1,23 +1,27 @@
-// Request.hpp
 #ifndef REQUEST_HPP
 #define REQUEST_HPP
-
-#include<vector>
-
+#include <vector>
+#include "Disk.hpp"
+struct RequestUnit
+{
+    Disk *pDisk;
+    int addr;
+    bool complete;
+};
 class Request
 {
-    public:
+public:
     int id;
     int object_id;
     int size;
-    //TODO 优化成位运算
-    bool complete[6];
-    // std::vector<int> needs;
-    int prev_id;
-
-    public:
-    Request(int id,int object_id,int size);
+    RequestUnit req_units[6];
+    int add_time;
+    int value;   // 价值
+    bool legacy; // 是否为已抛弃请求
+public:
+    Request(int id, int object_id, int size);
     bool is_complete();
+    void suspend_request();
 };
 
 #endif // REQUEST_HPP

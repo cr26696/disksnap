@@ -4,6 +4,7 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include "Request.hpp"
 #include "Disk.hpp"
 
 class PersuadeThread
@@ -12,6 +13,8 @@ private:
 	Disk *disk;
 
 public:
+	//TODO 重心动态维护
+	int job_center;//重心 
 	int job_count = 0;
 	// 存储任务块
 	std::vector<Request *> task_requests; // size 对应job_count;
@@ -20,11 +23,11 @@ public:
 	std::vector<Request *> canceled_requests;
 	// 只会在执行查找后有内容
 	std::vector<Request *> complete_requests;
-	std::unordered_map<int, std::vector<Request *>> map_obj_requests; // obj_id -> (size, complete_parts)
+	std::unordered_map<int, std::vector<Request *>> map_obj_requests;
 
 public:
 	PersuadeThread(Disk *disk_ptr); // 构造函数传入disk指针
-	void add_req(int req_id, Object &info);
+	void add_req(Request *req);
 	void rmv_req(Object &info);
 	void excute_find();
 
