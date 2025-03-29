@@ -35,31 +35,28 @@ bool Scheduler::add_request(int req_id, int obj_id)
     // 找到能响应请求的disk
     DiskManager &DM = DiskManager::getInstance();
     Object &obj = DM.objects[obj_id];
-
+    
+    
     int ideal_id = obj.diskid_replica[0];
-    int min_distance;
+    int min_score = 0;
     for (int i = 0; i < REP_NUM; i++)
     {
-        // 通义生成
         int disk_id = obj.diskid_replica[i];
-        Disk *target_disk = &DiskManager::getInstance().get_disk(disk_id);
-        Replica *rep = target_disk->get_replica(obj_id);
-
-        // 计算对象在该磁盘上的起始位置（取第一个块地址）
-        int obj_start_addr = rep->addr_part[0]; // OPT第一个不一定储存在最前面...
+        Disk* target_disk = &DiskManager::getInstance().get_disk(disk_id);
+        Replica* rep = target_disk->get_replica(obj_id);
+        
+        //准备数据计算综合评分
+        vector<int> obj_addr;   
+        for (int j = 0; j < rep->info.size; j++)
+            obj_addr.push_back(rep->addr_part[j]);
         int disk_head = target_disk->head;
         int volume = target_disk->volume;
-        int distance = (obj_start_addr - disk_head + volume) % volume;
-
-        if (i == 0)
-        {
-            min_distance = distance;
-            continue;
-        }
-        if (distance < min_distance)
+        double score = rating_disk_requests(disk_head, obj_addr, job_threads[disk_id].job_center, job_threads[disk_id].job_count, volume);
+   
+        if (score > min_score) 
         {
             ideal_id = disk_id;
-            min_distance = distance;
+            min_score = score;
         }
     }
     // 选好线程，调用添加任务函数
@@ -67,6 +64,25 @@ bool Scheduler::add_request(int req_id, int obj_id)
     job_threads[ideal_id].add_req(req);
 
     return true; // 假设添加总是成功
+}
+double Scheduler::rating_disk_requests(int disk_head, vector<int> &addrs, int job_center,int job_count, int volume)
+{
+    // 遍历每个磁盘，计算每个磁盘的评分
+    vector<double> score_weight = {4, 1, 5};
+    double score = 0.0;
+    double total_center = 0.0;
+    double total_distance = 0.0;
+    for (int addr : addrs){
+        total_center += (addr - job_center + volume) % volume; //重心距离
+        total_distance += (addr - disk_head + volume) % volume; //磁头距离
+    }
+    double center_score = total_center / addrs.size() / volume;
+    double head_score = total_distance / addrs.size() / volume;
+    if(job_count < 100)
+        score_weight = {1, 4, 5};
+    score = (1-center_score)*score_weight[0] + (1-head_score)*score_weight[1] + (1/(job_count + 1))*score_weight[2];
+    
+    return score;
 }
 
 vector<int> Scheduler::get_canceled_reqs_id()
