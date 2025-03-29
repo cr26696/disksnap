@@ -6,6 +6,10 @@
 #include <vector>
 #include "Request.hpp"
 #include "Disk.hpp"
+#include <fstream>
+#include <string>
+
+#define PRINT_SROCE true
 
 class PersuadeThread
 {

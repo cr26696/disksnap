@@ -13,6 +13,7 @@ extern int t;
 class Scheduler
 {
     friend class Request;
+    friend class System;
 private:
     static Scheduler *instance;
 	Disk *disk;

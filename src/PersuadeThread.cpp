@@ -39,6 +39,20 @@ void PersuadeThread::rmv_req(Object &obj)
     }
 
     // 2. 删除对应块
+    if(PRINT_SROCE)
+    {
+        string new_content;
+        ofstream file("sorce_info.txt", ios::app);
+        for(Request* req : canceled_requests)
+        {
+            new_content = "no" + to_string(req->id) + "(" + to_string(req->object_id+1) + ")" + " ";
+            for(int i = 0; i < req->size; i++){
+                new_content += to_string(req->req_units[i].addr) + "(" + to_string(req->req_units[i].find_time) + ") ";
+            }
+            new_content += to_string(req->add_time) + "~" + to_string(t) + "\n";
+            file << new_content;
+        }
+    }
     Replica *rep = disk->get_replica(obj.id);
     for (int i = 0; i < obj.size; i++)
     {
@@ -76,16 +90,26 @@ void PersuadeThread::excute_find()
                 int obj_id = disk->blocks[*it_addr].obj_id;
                 int part = disk->blocks[*it_addr].part;
                 /* 这个对象有请求 */
-                // if(map_obj_requests.find(obj_id) != map_obj_requests.end())
-                // {
-                // int part = disk->blocks[*it_addr].value().second;
                 assert(map_obj_requests.find(obj_id) != map_obj_requests.end());
                 for (auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                 {
                     (*req)->req_units[part].complete = true;
+                    (*req)->req_units[part].find_time = t;// 记录当前part完成时间
                     if ((*req)->is_complete())
                     {
+                        if(PRINT_SROCE)
+                        {
+                            string new_content;
+                            ofstream file("sorce_info.txt", ios::app);
+                            new_content = "ok" + to_string((*req)->id) +"(" + to_string((*req)->object_id+1) + ")" + " ";
+                            for(int i = 0; i < (*req)->size; i++){
+                                new_content += to_string((*req)->req_units[i].addr) + "(" + to_string((*req)->req_units[i].find_time) + ") ";
+                            }
+                            new_content += to_string((*req)->add_time) + "~" + to_string(t) + " disk-" + to_string(disk->id + 1) + "\n";
+                            file << new_content;
+                        }
                         complete_requests.push_back(*req);
+                        (*req)->req_complete_time = t;// 记录请求完成时间
                         job_count--;
                         req = map_obj_requests[obj_id].erase(req);
                     }
@@ -94,7 +118,6 @@ void PersuadeThread::excute_find()
                         ++req;
                     }
                 }
-                // }
                 // 已找到块，从待找块地址task_blocks中删除
                 it_addr = task_blocks.erase(it_addr);
                 if (it_addr == task_blocks.end())
