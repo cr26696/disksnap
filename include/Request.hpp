@@ -2,6 +2,9 @@
 #define REQUEST_HPP
 #include <vector>
 #include "Disk.hpp"
+#define MAX_ALIVE_TIME 90
+extern int t;
+
 struct RequestUnit
 {
     Disk *pDisk;
@@ -19,9 +22,9 @@ public:
     int value;   // 价值
     bool legacy; // 是否为已抛弃请求
 public:
-    Request(int id, int object_id, int size);
+    Request(int id, int object_id, int size, int time);
     bool is_complete();
-    void suspend_request();
+    int suspend_request();
 };
 
 #endif // REQUEST_HPP

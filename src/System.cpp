@@ -54,10 +54,16 @@ System &System::getInstance(int TimeStampNum, int TagNum, int DiskNum, int DiskV
     return instance;
 }
 
+int t = 1;
+
+int System::get_time()
+{
+    return t;
+}
 void System::run()
 {
     init();
-    for (int t = 1; t <= TimeStampNum + EXTRA_TIME; t++)
+    for (; t <= TimeStampNum + EXTRA_TIME; t++)
     {
         timestamp_action();
         delete_action();

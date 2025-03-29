@@ -49,11 +49,11 @@ private:
     int elapsed;    // 当前时间片已用token数
     int freeBlocks;
     Replica *replicas[MAX_OBJECT_NUM]={nullptr};//已存储的所有副本
-    Block blocks[MAX_DISK_SIZE];//磁盘各存储单元
     std::vector<DiskRegion> regions;//磁盘各区域
     std::string upload_info;
     bool phase_end; // 是否结束当前阶段
 public:
+    Block blocks[MAX_DISK_SIZE];//磁盘各存储单元
     const int id;
     const int volume;     // 磁盘容量
     const int tokenG;     // 当前时间片总可用token数

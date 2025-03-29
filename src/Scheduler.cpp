@@ -7,6 +7,7 @@ Scheduler::Scheduler()
 {
     DiskManager &DM = DiskManager::getInstance();
     int diskNum = DM.DiskNum;
+    int last_check_time = 1;
     for (int i = 0; i < diskNum; i++)
     {
         job_threads.push_back(&DM.get_disk(i));
@@ -34,35 +35,35 @@ bool Scheduler::add_request(int req_id, int obj_id)
     // 找到能响应请求的disk
     DiskManager &DM = DiskManager::getInstance();
     Object &obj = DM.objects[obj_id];
-    
-    
+
     int ideal_id = obj.diskid_replica[0];
     int min_distance;
     for (int i = 0; i < REP_NUM; i++)
     {
-        //通义生成
+        // 通义生成
         int disk_id = obj.diskid_replica[i];
-        Disk* target_disk = &DiskManager::getInstance().get_disk(disk_id);
-        Replica* rep = target_disk->get_replica(obj_id);
-        
+        Disk *target_disk = &DiskManager::getInstance().get_disk(disk_id);
+        Replica *rep = target_disk->get_replica(obj_id);
+
         // 计算对象在该磁盘上的起始位置（取第一个块地址）
-        int obj_start_addr = rep->addr_part[0];   //OPT第一个不一定储存在最前面...
+        int obj_start_addr = rep->addr_part[0]; // OPT第一个不一定储存在最前面...
         int disk_head = target_disk->head;
         int volume = target_disk->volume;
         int distance = (obj_start_addr - disk_head + volume) % volume;
-        
-        if (i == 0){
+
+        if (i == 0)
+        {
             min_distance = distance;
             continue;
-        }    
-        if (distance < min_distance) 
+        }
+        if (distance < min_distance)
         {
             ideal_id = disk_id;
             min_distance = distance;
         }
     }
     // 选好线程，调用添加任务函数
-    Request *req = new Request(req_id, obj.id, obj.size);
+    Request *req = new Request(req_id, obj.id, obj.size, t);
     job_threads[ideal_id].add_req(req);
 
     return true; // 假设添加总是成功
@@ -101,6 +102,8 @@ vector<int> Scheduler::get_complete_reqs_id()
 }
 void Scheduler::excute_find()
 {
+    // int suspend_block_num = 0;
+    check_suspend(t);
     for (int i = 0; i < job_threads.size(); i++)
     {
         job_threads[i].excute_find();
@@ -121,13 +124,13 @@ string Scheduler::getUploadInfo()
     return info;
 }
 
-double Scheduler::job_rating(vector<int> addrs,int job_center)
+double Scheduler::job_rating(vector<int> addrs, int job_center)
 {
-    //TODO 评分函数
-    //去拿各个盘副本 拿到各块地址
-    //考虑对象各块分散度
-    //与3重心距离，2磁头前后，1任务负载的分段函数） 得一评分 任务下发依据这个评分
-	return 0.0;
+    // TODO 评分函数
+    // 去拿各个盘副本 拿到各块地址
+    // 考虑对象各块分散度
+    // 与3重心距离，2磁头前后，1任务负载的分段函数） 得一评分 任务下发依据这个评分
+    return 0.0;
 }
 
 void Scheduler::end()
@@ -141,4 +144,27 @@ void Scheduler::end()
 unordered_map<int, std::vector<int>> &Scheduler ::get_active_requests()
 {
     return active_requests;
+}
+
+void Scheduler::check_suspend(const int current_time)
+{
+    int suspend_block_num = 0;
+    if (current_time - last_check_time >= CHECK_INTERVAL)
+    {
+        for (int i = 0; i < job_threads.size(); i++)
+        {
+            for (auto it_map = job_threads[i].map_obj_requests.begin(); it_map != job_threads[i].map_obj_requests.end() && suspend_block_num < MAX_SUSPEND_NUM; it_map++) // 进行task_blocks更新
+            // for (auto it_map = job_threads[i].map_obj_requests.begin(); it_map != job_threads[i].map_obj_requests.end(); it_map++)
+            {
+                for (auto &req : it_map->second)
+                {
+                    req->suspend_request();
+                    suspend_block_num += req->suspend_request();
+                    if (suspend_block_num >= MAX_SUSPEND_NUM)
+                        break;
+                }
+            }
+        }
+        last_check_time = current_time;
+    }
 }

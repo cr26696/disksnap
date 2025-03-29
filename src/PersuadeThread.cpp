@@ -31,12 +31,13 @@ void PersuadeThread::rmv_req(Object &obj)
         throw std::logic_error("PersuadeThread::rmv_req: try to get unexist object");
     }
 
-    vector<Request*> req_vec = map_obj_requests[obj.id];
-    for(Request* req : req_vec){
+    vector<Request *> req_vec = map_obj_requests[obj.id];
+    for (Request *req : req_vec)
+    {
         canceled_requests.push_back(req);
         job_count--;
     }
-    
+
     // 2. 删除对应块
     Replica *rep = disk->get_replica(obj.id);
     for (int i = 0; i < obj.size; i++)
@@ -77,22 +78,22 @@ void PersuadeThread::excute_find()
                 /* 这个对象有请求 */
                 // if(map_obj_requests.find(obj_id) != map_obj_requests.end())
                 // {
-                    // int part = disk->blocks[*it_addr].value().second;
-                    assert(map_obj_requests.find(obj_id) != map_obj_requests.end());
-                    for(auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
+                // int part = disk->blocks[*it_addr].value().second;
+                assert(map_obj_requests.find(obj_id) != map_obj_requests.end());
+                for (auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
+                {
+                    (*req)->req_units[part].complete = true;
+                    if ((*req)->is_complete())
                     {
-                        (*req)->req_units[part].complete = true;
-                        if ((*req)->is_complete())
-                        {
-                            complete_requests.push_back(*req);
-                            job_count--;
-                            req = map_obj_requests[obj_id].erase(req);
-                        }
-                        else
-                        {
-                            ++req;
-                        }
+                        complete_requests.push_back(*req);
+                        job_count--;
+                        req = map_obj_requests[obj_id].erase(req);
                     }
+                    else
+                    {
+                        ++req;
+                    }
+                }
                 // }
                 // 已找到块，从待找块地址task_blocks中删除
                 it_addr = task_blocks.erase(it_addr);
@@ -115,45 +116,49 @@ void PersuadeThread::excute_find()
             task_len++;
             current_addr = (current_addr + 1) % volume;
             ++it;
-            //环形判断
+            // 环形判断
             if (it == task_blocks.end())
                 it = task_blocks.begin();
         }
         // 未在目标上，尝试移动至目标(距离过长jump，距离中等pass，距离短判断使用pass/read)
-        if (disk->elapsed + distance + 64 > tokenG)    //这里jump没问题吗？
+        if (disk->elapsed + distance + 64 > tokenG) // 这里jump没问题吗？
             disk->operate(JUMP, *it_addr);
         else
         {
-            if (distance <= 4){
+            if (distance <= 4)
+            {
                 int pass_cus = distance + read_custom(64, task_len);
                 int read_cus = read_custom(disk->head_s, distance + task_len);
-                if(pass_cus >= read_cus)
+                if (pass_cus >= read_cus)
                     disk->operate(READ, 0);
                 else
                     disk->operate(PASS, distance);
-                }
+            }
             else
-                disk->operate(PASS, distance);    
-        } 
+                disk->operate(PASS, distance);
+        }
     }
     disk->op_end();
 }
 
-//计算读取消耗的token
-int PersuadeThread::read_custom(int current_custom,int len){
+// 计算读取消耗的token
+int PersuadeThread::read_custom(int current_custom, int len)
+{
     int read_custom = 0;
-    
-    for(int i = 0; i < len; i++){
+
+    for (int i = 0; i < len; i++)
+    {
         if (current_custom == 16)
             read_custom += current_custom;
-        else if (current_custom == -1 || current_custom == 0){
+        else if (current_custom == -1 || current_custom == 0)
+        {
             current_custom = 64;
-            read_custom += current_custom; 
+            read_custom += current_custom;
         }
         else
-        {       
+        {
             current_custom = static_cast<int>(std::ceil(current_custom * 0.8));
-            read_custom += current_custom; 
+            read_custom += current_custom;
         }
     }
     return read_custom;

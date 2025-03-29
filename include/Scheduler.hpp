@@ -2,24 +2,26 @@
 #ifndef SCHEDULER_HPP
 #define SCHEDULER_HPP
 
+#define MAX_SUSPEND_NUM 5000
+#define CHECK_INTERVAL 10
 #include <algorithm>
 #include <vector>
 #include <unordered_map>
 #include <mutex>
-
 #include "PersuadeThread.hpp"
-
+extern int t;
 class Scheduler
 {
+    friend class Request;
 private:
     static Scheduler *instance;
 	Disk *disk;
-    
+    int last_check_time = 1;
     std::unordered_map<int, std::vector<int>> active_requests; // 对象编号，请求当前对象的所有活跃请求id
     Scheduler();
     std::mutex mutex_;
     std::vector<PersuadeThread> job_threads;
-
+    void check_suspend(const int current_time);
 public:
     static Scheduler &getInstance();
     PersuadeThread &get_disk_thread(int thread_index);

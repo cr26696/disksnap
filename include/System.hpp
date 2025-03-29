@@ -10,9 +10,7 @@
 #include <algorithm>
 #include <iostream>
 #include <math.h>
-
 #include "MetaDefine.hpp"
-
 #include "Scheduler.hpp"
 #include "DiskManager.hpp"
 class System
@@ -32,7 +30,7 @@ private:
     std::vector<std::vector<int>> fre_read;  // 读取操作统计数据
     std::vector<int> label_index;            // 全局变量，记录每个标签在磁盘中的起始位置
     std::vector<double> tag_ratio;
-    bool doUpload = true;
+    bool doUpload = false;
 private:
     System(const System &) = delete;
     System &operator=(const System &) = delete;
@@ -52,5 +50,6 @@ public:
     static System &getInstance(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int TokenG);
     // static System &getInstance();
     void run();
+    int get_time();
 };
 #endif // SYSTEM_HPP

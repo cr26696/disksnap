@@ -17,7 +17,7 @@ public:
 	int job_center;//重心 
 	int job_count = 0;
 	// 存储任务块
-	std::vector<Request *> task_requests; // size 对应job_count;
+	// std::vector<Request *> task_requests; // size 对应job_count;
 	std::set<int> task_blocks;
 	// 只会在删除对象时才会有内容 一帧结尾时调用end函数清空
 	std::vector<Request *> canceled_requests;
