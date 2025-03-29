@@ -1,11 +1,12 @@
 #include "PersuadeThread.hpp"
 #include "DiskManager.hpp"
-#include <cmath> 
+#include <cmath>
 
 using namespace std;
 
 PersuadeThread::PersuadeThread(Disk *disk_ptr) : disk(disk_ptr)
 {
+    last_get_time = 1;
 }
 
 // 创建任务 添加到活跃任务
@@ -18,7 +19,7 @@ void PersuadeThread::add_req(Request *req)
         req->req_units[i].addr = addr;
         req->req_units[i].pDisk = disk;
         updata_job_center(true, addr);
-        task_blocks.insert(addr);
+        // task_blocks.insert(addr);
     }
     map_obj_requests[req->object_id].push_back(req);
     job_count++;
@@ -41,14 +42,15 @@ void PersuadeThread::rmv_req(Object &obj)
     }
 
     // 2. 删除对应块
-    if(PRINT_SROCE)
+    if (PRINT_SROCE)
     {
         string new_content;
         ofstream file("sorce_info.txt", ios::app);
-        for(Request* req : canceled_requests)
+        for (Request *req : canceled_requests)
         {
-            new_content = "no" + to_string(req->id) + "(" + to_string(req->object_id+1) + ")" + " ";
-            for(int i = 0; i < req->size; i++){
+            new_content = "no" + to_string(req->id) + "(" + to_string(req->object_id + 1) + ")" + " ";
+            for (int i = 0; i < req->size; i++)
+            {
                 new_content += to_string(req->req_units[i].addr) + "(" + to_string(req->req_units[i].find_time) + ") ";
             }
             new_content += to_string(req->add_time) + "~" + to_string(t) + "\n";
@@ -70,17 +72,18 @@ void PersuadeThread::updata_job_center(bool is_add, int addr)
     int volume = disk->volume;
     int len_ni = ((int)round(job_center) - addr + volume) % volume;
     int len_shun = (addr - (int)round(job_center) + volume) % volume;
-    int len_addr = len_ni <= len_shun? job_center - len_ni:job_center + len_shun;
-    if(is_add)
-        job_center = (task_blocks.size() * job_center + len_addr)/(task_blocks.size() + 1);
+    int len_addr = len_ni <= len_shun ? job_center - len_ni : job_center + len_shun;
+    if (is_add)
+        job_center = (task_blocks.size() * job_center + len_addr) / (task_blocks.size() + 1);
     else
-        job_center = (task_blocks.size() * job_center - len_addr)/(task_blocks.size() - 1);
-    job_center = fmod((job_center + volume) , volume);
+        job_center = (task_blocks.size() * job_center - len_addr) / (task_blocks.size() - 1);
+    job_center = fmod((job_center + volume), volume);
 }
 
 // 按任务队列找
 void PersuadeThread::excute_find()
 {
+    get_task_blocks(t);
     // OPT 磁盘内查找算法
     if (task_blocks.empty())
     {
@@ -110,22 +113,25 @@ void PersuadeThread::excute_find()
                 for (auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                 {
                     (*req)->req_units[part].complete = true;
-                    (*req)->req_units[part].find_time = t;// 记录当前part完成时间
+                    (*req)->req_units[part].find_time = t; // 记录当前part完成时间
+                    // (*req)->dnot_comp_num--;
+                    // assert((*req)->dnot_comp_num >= 0);
                     if ((*req)->is_complete())
                     {
-                        if(PRINT_SROCE)
+                        if (PRINT_SROCE)
                         {
                             string new_content;
                             ofstream file("sorce_info.txt", ios::app);
-                            new_content = "ok" + to_string((*req)->id) +"(" + to_string((*req)->object_id+1) + ")" + " ";
-                            for(int i = 0; i < (*req)->size; i++){
+                            new_content = "ok" + to_string((*req)->id) + "(" + to_string((*req)->object_id + 1) + ")" + " ";
+                            for (int i = 0; i < (*req)->size; i++)
+                            {
                                 new_content += to_string((*req)->req_units[i].addr) + "(" + to_string((*req)->req_units[i].find_time) + ") ";
                             }
                             new_content += to_string((*req)->add_time) + "~" + to_string(t) + " disk-" + to_string(disk->id + 1) + "\n";
                             file << new_content;
                         }
                         complete_requests.push_back(*req);
-                        (*req)->req_complete_time = t;// 记录请求完成时间
+                        (*req)->req_complete_time = t; // 记录请求完成时间
                         job_count--;
                         req = map_obj_requests[obj_id].erase(req);
                     }
@@ -201,6 +207,50 @@ int PersuadeThread::read_custom(int current_custom, int len)
         }
     }
     return read_custom;
+}
+
+void PersuadeThread::get_task_blocks(const int current_time)
+{
+    if (current_time - last_get_time >= CHECK_TAKS_TIME)
+    {
+        struct Compare
+        {
+            bool operator()(const std::pair<double, Request *> &a, const std::pair<double, Request *> &b)
+            {
+                return a.first < b.first; // 按 first 的降序排列（最大堆）
+            }
+        };
+        priority_queue<pair<double, Request *>, vector<pair<double, Request *>>, Compare> req_val_heap;
+        vector<Request *> reqs_vec;
+        for (auto it_map = map_obj_requests.begin(); it_map != map_obj_requests.end(); ++it_map)
+        {
+            for (Request *req : it_map->second)
+            {
+                // assert(req->dnot_comp_num > 0);
+                double req_val = 0.0;
+                double req_sorce = req->get_sorce(t);
+                int same_ojb_req_num = req->size * it_map->second.size();
+                int do_not_comp_rate = req->do_not_complete_num() * req->do_not_complete_num() * req->do_not_complete_num();
+                if (do_not_comp_rate != 0)
+                {
+                    req_val = req_sorce * same_ojb_req_num / do_not_comp_rate;
+                }
+                req_val_heap.push(make_pair(req_val, req));
+            }
+        }
+        int count = req_val_heap.size() * MAX_PROCESS_RATE;
+        task_blocks.clear();
+        while (count--)
+        {
+            Request *req = req_val_heap.top().second;
+            for (int i = 0; i < req->size; i++)
+            {
+                task_blocks.insert(req->req_units[i].addr);
+            }
+            req_val_heap.pop();
+        }
+        last_get_time = current_time;
+    }
 }
 
 void PersuadeThread::end()

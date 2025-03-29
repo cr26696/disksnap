@@ -4,13 +4,15 @@
 #include <unordered_set>
 #include <unordered_map>
 #include <vector>
+#include <queue>
 #include "Request.hpp"
 #include "Disk.hpp"
 #include <fstream>
 #include <string>
 
-#define PRINT_SROCE true
-
+#define PRINT_SROCE false
+#define MAX_PROCESS_RATE 0.9
+#define CHECK_TAKS_TIME 20
 class PersuadeThread
 {
 private:
@@ -20,6 +22,7 @@ public:
 	//TODO 重心动态维护
 	float job_center;//重心 
 	int job_count = 0;
+	int last_get_time = 1;
 	// 存储任务块
 	// std::vector<Request *> task_requests; // size 对应job_count;
 	std::set<int> task_blocks;
@@ -36,7 +39,7 @@ public:
 	void excute_find();
 	void updata_job_center(bool is_add, int addr);
 	int read_custom(int current_costom, int len);
-
+	void get_task_blocks(const int current_time);
 	void end();
 };
 
