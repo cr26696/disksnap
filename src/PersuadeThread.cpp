@@ -1,6 +1,6 @@
 #include "PersuadeThread.hpp"
 #include "DiskManager.hpp"
-#include <cmath> 
+#include <cmath>
 
 using namespace std;
 
@@ -41,14 +41,15 @@ void PersuadeThread::rmv_req(Object &obj)
     }
 
     // 2. 删除对应块
-    if(PRINT_SROCE)
+    if (PRINT_SROCE)
     {
         string new_content;
         ofstream file("sorce_info.txt", ios::app);
-        for(Request* req : canceled_requests)
+        for (Request *req : canceled_requests)
         {
-            new_content = "no" + to_string(req->id) + "(" + to_string(req->object_id+1) + ")" + " ";
-            for(int i = 0; i < req->size; i++){
+            new_content = "no" + to_string(req->id) + "(" + to_string(req->object_id + 1) + ")" + " ";
+            for (int i = 0; i < req->size; i++)
+            {
                 new_content += to_string(req->req_units[i].addr) + "(" + to_string(req->req_units[i].find_time) + ") ";
             }
             new_content += to_string(req->add_time) + "~" + to_string(t) + "\n";
@@ -67,15 +68,32 @@ void PersuadeThread::rmv_req(Object &obj)
 
 void PersuadeThread::updata_job_center(bool is_add, int addr)
 {
+    if (task_blocks.size() <= 1)
+    {
+        if (!is_add)
+        {
+            job_center = 0;
+            return;
+        }
+    }
     int volume = disk->volume;
     int len_ni = ((int)round(job_center) - addr + volume) % volume;
     int len_shun = (addr - (int)round(job_center) + volume) % volume;
-    int len_addr = len_ni <= len_shun? job_center - len_ni:job_center + len_shun;
-    if(is_add)
-        job_center = (task_blocks.size() * job_center + len_addr)/(task_blocks.size() + 1);
+    int len_addr = len_ni <= len_shun ? job_center - len_ni : job_center + len_shun;
+    int delta = len_ni < len_shun ? -len_ni : len_shun;
+    if (is_add)
+    {
+        int size = task_blocks.size() + 1;
+        assert(size != 0);
+        job_center += delta;
+    }
     else
-        job_center = (task_blocks.size() * job_center - len_addr)/(task_blocks.size() - 1);
-    job_center = fmod((job_center + volume) , volume);
+    {
+        int size = task_blocks.size();
+        assert(size != 0);
+        job_center -= delta;
+    }
+    job_center = fmod((job_center + volume), volume);
 }
 
 // 按任务队列找
@@ -110,22 +128,23 @@ void PersuadeThread::excute_find()
                 for (auto req = map_obj_requests[obj_id].begin(); req != map_obj_requests[obj_id].end();)
                 {
                     (*req)->req_units[part].complete = true;
-                    (*req)->req_units[part].find_time = t;// 记录当前part完成时间
+                    (*req)->req_units[part].find_time = t; // 记录当前part完成时间
                     if ((*req)->is_complete())
                     {
-                        if(PRINT_SROCE)
+                        if (PRINT_SROCE)
                         {
                             string new_content;
                             ofstream file("sorce_info.txt", ios::app);
-                            new_content = "ok" + to_string((*req)->id) +"(" + to_string((*req)->object_id+1) + ")" + " ";
-                            for(int i = 0; i < (*req)->size; i++){
+                            new_content = "ok" + to_string((*req)->id) + "(" + to_string((*req)->object_id + 1) + ")" + " ";
+                            for (int i = 0; i < (*req)->size; i++)
+                            {
                                 new_content += to_string((*req)->req_units[i].addr) + "(" + to_string((*req)->req_units[i].find_time) + ") ";
                             }
                             new_content += to_string((*req)->add_time) + "~" + to_string(t) + " disk-" + to_string(disk->id + 1) + "\n";
                             file << new_content;
                         }
                         complete_requests.push_back(*req);
-                        (*req)->req_complete_time = t;// 记录请求完成时间
+                        (*req)->req_complete_time = t; // 记录请求完成时间
                         job_count--;
                         req = map_obj_requests[obj_id].erase(req);
                     }
