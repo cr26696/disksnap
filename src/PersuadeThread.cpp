@@ -211,7 +211,7 @@ int PersuadeThread::read_custom(int current_custom, int len)
 
 void PersuadeThread::get_task_blocks(const int current_time)
 {
-    if (current_time - last_get_time >= CHECK_TAKS_TIME)
+    if (current_time - last_get_time > CHECK_TAKS_TIME)
     {
         struct Compare
         {
@@ -229,7 +229,7 @@ void PersuadeThread::get_task_blocks(const int current_time)
                 // assert(req->dnot_comp_num > 0);
                 double req_val = 0.0;
                 double req_sorce = req->get_sorce(t);
-                int same_ojb_req_num = req->size * it_map->second.size();
+                int same_ojb_req_num = it_map->second.size();
                 int do_not_comp_rate = req->do_not_complete_num() * req->do_not_complete_num() * req->do_not_complete_num();
                 if (do_not_comp_rate != 0)
                 {

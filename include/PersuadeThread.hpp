@@ -12,7 +12,7 @@
 
 #define PRINT_SROCE false
 #define MAX_PROCESS_RATE 0.9
-#define CHECK_TAKS_TIME 20
+#define CHECK_TAKS_TIME 1
 class PersuadeThread
 {
 private:
