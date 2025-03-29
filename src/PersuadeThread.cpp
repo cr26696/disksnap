@@ -1,5 +1,6 @@
 #include "PersuadeThread.hpp"
 #include "DiskManager.hpp"
+#include <cmath> 
 
 using namespace std;
 
@@ -16,6 +17,7 @@ void PersuadeThread::add_req(Request *req)
         int addr = replica->addr_part[i];
         req->req_units[i].addr = addr;
         req->req_units[i].pDisk = disk;
+        updata_job_center(true, addr);
         task_blocks.insert(addr);
     }
     map_obj_requests[req->object_id].push_back(req);
@@ -42,9 +44,23 @@ void PersuadeThread::rmv_req(Object &obj)
     for (int i = 0; i < obj.size; i++)
     {
         int addr = rep->addr_part[i];
+        updata_job_center(false, addr);
         task_blocks.erase(addr);
     }
     map_obj_requests.erase(obj.id);
+}
+
+void PersuadeThread::updata_job_center(bool is_add, int addr)
+{
+    int volume = disk->volume;
+    int len_ni = ((int)round(job_center) - addr + volume) % volume;
+    int len_shun = (addr - (int)round(job_center) + volume) % volume;
+    int len_addr = len_ni <= len_shun? job_center - len_ni:job_center + len_shun;
+    if(is_add)
+        job_center = (task_blocks.size() * job_center + len_addr)/(task_blocks.size() + 1);
+    else
+        job_center = (task_blocks.size() * job_center - len_addr)/(task_blocks.size() - 1);
+    job_center = fmod((job_center + volume) , volume);
 }
 
 // 按任务队列找

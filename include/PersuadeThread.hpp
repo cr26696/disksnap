@@ -14,7 +14,7 @@ private:
 
 public:
 	//TODO 重心动态维护
-	int job_center;//重心 
+	float job_center;//重心 
 	int job_count = 0;
 	// 存储任务块
 	std::vector<Request *> task_requests; // size 对应job_count;
@@ -30,7 +30,7 @@ public:
 	void add_req(Request *req);
 	void rmv_req(Object &info);
 	void excute_find();
-
+	void updata_job_center(bool is_add, int addr);
 	int read_custom(int current_costom, int len);
 
 	void end();

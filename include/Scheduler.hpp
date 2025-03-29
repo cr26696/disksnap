@@ -31,6 +31,7 @@ public:
     void excute_find();
     std::string getUploadInfo();
     double job_rating(std::vector<int> addrs,int job_center);
+    double rating_disk_requests(int disk_head, std::vector<int> &addrs, int job_center,int job_count, int volume);
     void end();
 };
 
