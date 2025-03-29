@@ -9,7 +9,7 @@
 #include <fstream>
 #include <string>
 
-#define PRINT_SROCE true
+#define PRINT_SROCE false
 
 class PersuadeThread
 {
@@ -34,7 +34,7 @@ public:
 	void add_req(Request *req);
 	void rmv_req(Object &info);
 	void excute_find();
-
+	void updata_job_center(bool is_add, int addr);
 	int read_custom(int current_costom, int len);
 
 	void end();
