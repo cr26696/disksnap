@@ -119,7 +119,7 @@ vector<int> Scheduler::get_complete_reqs_id()
 void Scheduler::excute_find()
 {
     // int suspend_block_num = 0;
-    check_suspend(t);
+    // check_suspend(t);
     for (int i = 0; i < job_threads.size(); i++)
     {
         job_threads[i].excute_find();

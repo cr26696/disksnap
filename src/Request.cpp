@@ -2,10 +2,12 @@
 #include "Request.hpp"
 #include "Scheduler.hpp"
 Request::Request(int id,int object_id,int size, int time):id(id),object_id(object_id),size(size),add_time(time){
+	req_complete_time = -1;
 	for(int i = 0; i < size; i++){
 		auto& unit = req_units[i];
 		unit.pDisk = nullptr;
 		unit.addr = -1;
+		unit.find_time = -1;
 		unit.complete = false;
 	}
 }
