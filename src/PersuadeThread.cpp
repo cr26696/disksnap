@@ -104,15 +104,18 @@ void PersuadeThread::excute_find()
         return;
     }
     auto it_addr = task_blocks.lower_bound(disk->head);
-    if (it_addr == task_blocks.end())
-    {
-        it_addr = task_blocks.begin();
-    }
     int volume = disk->volume;
     int tokenG = disk->tokenG;
     int distance;
-    while (it_addr != task_blocks.end() && !disk->phase_end)
+    while (!disk->phase_end)
     {
+        if (it_addr == task_blocks.end())
+        {
+            if (!task_blocks.empty())
+                it_addr = task_blocks.begin();
+            else
+                break;
+        }
         distance = (*it_addr - disk->head + volume) % volume;
         if (distance == 0)
         {
