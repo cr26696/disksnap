@@ -2,8 +2,7 @@
 #ifndef SCHEDULER_HPP
 #define SCHEDULER_HPP
 
-#define MAX_SUSPEND_NUM 5000
-#define CHECK_INTERVAL 10
+
 #include <algorithm>
 #include <vector>
 #include <unordered_map>

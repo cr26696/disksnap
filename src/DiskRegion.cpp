@@ -1,5 +1,5 @@
 #include "DiskRegion.hpp"
-#define DEBUG_MODE true
+
 using namespace std;
 DiskRegion::DiskRegion(int start, int end) : region_start(start), region_end(end), free_blocks_size(end - start + 1)
 {

@@ -2,7 +2,7 @@
 #define REQUEST_HPP
 #include <vector>
 #include "Disk.hpp"
-#define MAX_ALIVE_TIME 90
+
 extern int t;
 
 struct RequestUnit

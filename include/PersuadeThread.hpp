@@ -9,7 +9,7 @@
 #include <fstream>
 #include <string>
 
-#define PRINT_SROCE false
+
 
 class PersuadeThread
 {

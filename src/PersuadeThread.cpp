@@ -40,7 +40,7 @@ void PersuadeThread::rmv_req(Object &obj)
     }
 
     // 2. 删除对应块
-    if (PRINT_SROCE)
+    if (LOG_REQUESTS_INFO)
     {
         string new_content;
         ofstream file("sorce_info.txt", ios::app);
@@ -129,7 +129,7 @@ void PersuadeThread::excute_find()
                     (*req)->req_units[part].find_time = t; // 记录当前part完成时间
                     if ((*req)->is_complete())
                     {
-                        if (PRINT_SROCE)
+                        if (LOG_REQUESTS_INFO)
                         {
                             string new_content;
                             ofstream file("sorce_info.txt", ios::app);
