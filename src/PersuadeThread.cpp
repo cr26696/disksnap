@@ -130,7 +130,7 @@ void PersuadeThread::excute_find()
                 {
                     (*req)->req_units[part].complete = true;
                     (*req)->req_units[part].find_time = t; // 记录当前part完成时间
-                    if ((*req)->is_complete())
+                    if ((*req)->isComplete())
                     {
                         if (LOG_REQUESTS_INFO)
                         {

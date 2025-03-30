@@ -12,13 +12,16 @@ Request::Request(int id,int object_id,int size, int time):id(id),object_id(objec
 	}
 }
 
-bool Request::is_complete()
+bool Request::isComplete()
 {
 	//TODO 改判断完成
 	for(int i = 0; i < size; i++)
 		if(req_units[i].complete == false)
 			return false;
 	return true;
+}
+void Request::suspend(){
+	this->suspended = true;
 }
 int Request::suspend_request() {
 	//TODO 更新文档得分函数 计算更新value

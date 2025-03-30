@@ -21,11 +21,12 @@ public:
     RequestUnit req_units[6];
     int add_time;
     int value;   // 价值
-    bool legacy; // 是否为已抛弃请求
+    bool suspended; // 是否为已抛弃请求
     int req_complete_time;
 public:
-    Request(int id, int object_id, int size, int time);
-    bool is_complete();
+    Request(int req_id, int object_id, int size, int time);
+    bool isComplete();
+    void suspend();
     int suspend_request();
 };
 

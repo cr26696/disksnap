@@ -3,38 +3,38 @@
 using namespace std;
 // 构造函数参数对应T M N V G
 System::System(int TimeStampNum, int TagNum, int DiskNum, int DiskVolume, int TokenG)
-    : TimeStampNum(TimeStampNum),
-      TagNum(TagNum),
-      DiskNum(DiskNum),
-      DiskVolume(DiskVolume),
-      TokenG(TokenG)
 {
+    info = {TimeStampNum,
+            TagNum,
+            DiskNum,
+            DiskVolume,
+            TokenG};
 }
 
 void System::init()
 {
-    PeriodNum = (TimeStampNum - 1) / FRE_PER_SLICING + 1;
-    fre_del.assign(TagNum, std::vector<int>(PeriodNum, 0));
-    fre_write.assign(TagNum, std::vector<int>(PeriodNum, 0));
-    fre_read.assign(TagNum, std::vector<int>(PeriodNum, 0));
+    info.PeriodNum = (info.TimeStampNum - 1) / FRE_PER_SLICING + 1;
+    fre_del.assign(info.TagNum, std::vector<int>(info.PeriodNum, 0));
+    fre_write.assign(info.TagNum, std::vector<int>(info.PeriodNum, 0));
+    fre_read.assign(info.TagNum, std::vector<int>(info.PeriodNum, 0));
 
-    for (int i = 0; i < TagNum; i++)
+    for (int i = 0; i < info.TagNum; i++)
     {
-        for (int j = 0; j < PeriodNum; j++)
+        for (int j = 0; j < info.PeriodNum; j++)
         {
             scanf("%d", &fre_del[i][j]);
         }
     }
-    for (int i = 0; i < TagNum; i++)
+    for (int i = 0; i < info.TagNum; i++)
     {
-        for (int j = 0; j < PeriodNum; j++)
+        for (int j = 0; j < info.PeriodNum; j++)
         {
             scanf("%d", &fre_write[i][j]);
         }
     }
-    for (int i = 0; i < TagNum; i++)
+    for (int i = 0; i < info.TagNum; i++)
     {
-        for (int j = 0; j < PeriodNum; j++)
+        for (int j = 0; j < info.PeriodNum; j++)
         {
             scanf("%d", &fre_read[i][j]);
         }
@@ -43,7 +43,7 @@ void System::init()
     fflush(stdout);
 
     label_oriented_storge();
-    DiskManager::getInstance(DiskNum, DiskVolume, TokenG, tag_ratio);
+    DiskManager::getInstance(info.DiskNum, info.DiskVolume, info.TokenG, tag_ratio);
 }
 
 // 获取单例实例的静态方法
@@ -59,10 +59,14 @@ int System::get_time()
 {
     return t;
 }
+SysInfo &System::getInfo()
+{
+    return info;
+}
 void System::run()
 {
     init();
-    for (; t <= TimeStampNum + EXTRA_TIME; t++)
+    for (; t <= info.TimeStampNum + EXTRA_TIME; t++)
     {
         timestamp_action();
         delete_action();
@@ -77,12 +81,12 @@ void System::timestamp_action()
     int timestamp;
     scanf("%*s%d", &timestamp);
     printf("TIMESTAMP %d\n", timestamp);
-    TimeStamp = timestamp;
+    info.TimeStamp = timestamp;
     fflush(stdout);
 }
 void System::update_time()
 {
-    TimeStamp++;
+    info.TimeStamp++;
 }
 
 void System::delete_action()
@@ -151,17 +155,17 @@ void System::write_action()
 
 void System::label_oriented_storge()
 {
-    std::vector<int> total_del(TagNum, 0); // 初始化结果向量
-    std::vector<int> total_wri(TagNum, 0);
-    std::vector<int> total_read(TagNum, 0);
-    std::vector<int> total_writes(TagNum, 0);
+    std::vector<int> total_del(info.TagNum, 0); // 初始化结果向量
+    std::vector<int> total_wri(info.TagNum, 0);
+    std::vector<int> total_read(info.TagNum, 0);
+    std::vector<int> total_writes(info.TagNum, 0);
     // std::vector<float> ratio(TagNum, 0.0);
     int writes = 0;
-    tag_ratio.resize(TagNum, 0);
+    tag_ratio.resize(info.TagNum, 0);
 
-    for (int i = 0; i < TagNum; i++)
+    for (int i = 0; i < info.TagNum; i++)
     {
-        for (int j = 0; j < PeriodNum; j++)
+        for (int j = 0; j < info.PeriodNum; j++)
         {
             total_del[i] += fre_del[i][j];
             total_wri[i] += fre_write[i][j];
@@ -173,7 +177,7 @@ void System::label_oriented_storge()
     assert(writes != 0);
 
     // OPT 有必要按读的热值对标签存储顺序进行排序写入吗？
-    for (int i = 0; i < TagNum; i++)
+    for (int i = 0; i < info.TagNum; i++)
     {
         tag_ratio[i] = (float)total_wri[i] / writes;
         assert(tag_ratio[i] >= 0.0);

@@ -1,8 +1,8 @@
-// Scheduler.cpp
+#include "System.hpp"
+#include "Utils.hpp"
 #include "Scheduler.hpp"
 #include "DiskManager.hpp"
 using namespace std;
-
 Scheduler::Scheduler()
 {
     DiskManager &DM = DiskManager::getInstance();
@@ -37,7 +37,7 @@ bool Scheduler::add_request(int req_id, int obj_id)
     Object &obj = DM.objects[obj_id];
 
     int ideal_id = obj.diskid_replica[0];
-    int min_distance;
+    int min_score;
     for (int i = 0; i < REP_NUM; i++)
     {
         // 通义生成
@@ -45,21 +45,18 @@ bool Scheduler::add_request(int req_id, int obj_id)
         Disk *target_disk = &DiskManager::getInstance().get_disk(disk_id);
         Replica *rep = target_disk->get_replica(obj_id);
 
-        // 计算对象在该磁盘上的起始位置（取第一个块地址）
-        int obj_start_addr = rep->addr_part[0]; // OPT第一个不一定储存在最前面...
+        // 准备数据计算综合评分
+        vector<int> obj_addr;
+        for (int j = 0; j < rep->info.size; j++)
+            obj_addr.push_back(rep->addr_part[j]);
         int disk_head = target_disk->head;
         int volume = target_disk->volume;
-        int distance = (obj_start_addr - disk_head + volume) % volume;
+        double score = rateReqToDisk(disk_head, obj_addr, job_threads[disk_id].job_center, job_threads[disk_id].job_count, volume);
 
-        if (i == 0)
-        {
-            min_distance = distance;
-            continue;
-        }
-        if (distance < min_distance)
+        if (score > min_score)
         {
             ideal_id = disk_id;
-            min_distance = distance;
+            min_score = score;
         }
     }
     // 选好线程，调用添加任务函数
@@ -67,6 +64,35 @@ bool Scheduler::add_request(int req_id, int obj_id)
     job_threads[ideal_id].add_req(req);
 
     return true; // 假设添加总是成功
+}
+// 对某个磁盘 某请求添加的得分 这个得分可以用于确定请求放在哪个磁盘
+double Scheduler::rateReqToDisk(int disk_head, vector<int> &addrs, int job_center, int job_count, int volume)
+{
+    if (addrs.empty())
+        throw range_error("add_request: addrs is empty");
+    // 遍历每个磁盘，计算每个磁盘的评分
+    double w_center = 0;
+    double w_head = 0;
+    double w_jobCount = 1;
+    double score = 0.0;
+    double center_score = 0.0;
+    double head_score = 0.0;
+    double job_load = 0.0;
+    double job_delta = 0.5;
+    for (int addr : addrs)
+    {
+        double d_center = minDistance(addr, job_center, volume); // 重心距离
+        center_score += 1 - d_center * 2 / volume;
+        double d_head = (addr - disk_head + volume) % volume;
+        int tokenG = System::getInfo().TokenG;
+        d_head = min(d_head, (double)tokenG);
+        head_score += 1 - d_head / tokenG;
+        job_load += job_delta;
+        job_delta *= 0.5; // 级数 0.5 + 0.25 + 0.125
+    }
+    double job_score = 1 - job_load;
+    score = center_score * w_center + head_score * w_head + job_score * w_jobCount;
+    return score;
 }
 
 vector<int> Scheduler::get_canceled_reqs_id()
@@ -122,15 +148,6 @@ string Scheduler::getUploadInfo()
         info += to_string(req_id) + "\n";
     }
     return info;
-}
-
-double Scheduler::job_rating(vector<int> addrs, int job_center)
-{
-    // TODO 评分函数
-    // 去拿各个盘副本 拿到各块地址
-    // 考虑对象各块分散度
-    // 与3重心距离，2磁头前后，1任务负载的分段函数） 得一评分 任务下发依据这个评分
-    return 0.0;
 }
 
 void Scheduler::end()

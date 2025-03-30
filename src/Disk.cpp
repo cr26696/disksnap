@@ -16,18 +16,18 @@ Disk::Disk(int volume, int G, int id, vector<double> &tag_ratio)
     elapsed = 0;
     phase_end = false;
     freeBlocks = 0;
-    //构造磁盘tag区域
+    // 构造磁盘tag区域
     int region_start = 0;
     for (int i = 0; i < tag_ratio.size() - 1; i++)
     {
         int region_size = static_cast<int>(tag_ratio[i] * volume);
         int region_end = region_start + region_size - 1;
-        regions.push_back(DiskRegion(region_start, region_end));
+        regions.push_back(DiskRegion(region_start, region_end, i + 1));
         blocks[region_start].start = true;
         blocks[region_end].end = true;
         region_start = region_end + 1;
     }
-    regions.push_back(DiskRegion(region_start, volume - 1));
+    regions.push_back(DiskRegion(region_start, volume - 1, tag_ratio.size()));
 }
 
 // 会移动head JUMP需传入跳转地址 PASS传入距离 READ无视参数可填0
@@ -46,7 +46,7 @@ bool Disk::operate(DiskOp op, int param)
             return false;
         }
         // printf("j %d\n", param + 1);
-        upload_info+= "j " + to_string(param + 1) + "\n";
+        upload_info += "j " + to_string(param + 1) + "\n";
         head = param % volume;
         head_s = 0;
         elapsed = tokenG + 1;
@@ -93,7 +93,7 @@ bool Disk::operate(DiskOp op, int param)
         {
             elapsed += consume_token;
             head_s = static_cast<int>(std::ceil(consume_token * 0.8));
-            upload_info+="r";
+            upload_info += "r";
             // printf("r");
             head++;
             head = head % volume;
@@ -110,41 +110,57 @@ void Disk::op_end()
 {
     if (elapsed >= tokenG)
         return;
-    upload_info+= "#\n";
+    upload_info += "#\n";
     // printf("#\n");
     elapsed = tokenG;
     phase_end = true;
 }
-//返回（空格+块写入地址）* size
+// 返回（空格+块写入地址）* size
 string Disk::wrt_replica(Object &info)
 {
     // 判断并选用Region，调用Region的use_space方法
     replicas[info.id] = new Replica(info);
     Replica *replica = replicas[info.id];
     vector<int> addrs;
-    int idx_tag = info.tag -1; // tag从1开始 作索引使用时-1
-    if (regions[idx_tag].free_blocks_size >= info.size)
+    int idx_tag = info.tag - 1; // tag从1开始 作索引使用时-1
+    if (regions[idx_tag].space_count >= info.size)
         addrs = regions[idx_tag].use_space(info.size);
     else
     {
-        int region_idx = 0;
-        for (int i = 1; i < regions.size(); i++)
+        vector<int> region_indexs;
+        region_indexs.reserve(regions.size());
+        for (int i = 0; i < regions.size(); i++)
+            region_indexs.push_back(i);
+        sort(region_indexs.begin(), region_indexs.end(), [idx_tag](int a, int b)
+             {
+            int dist_a = min(abs(idx_tag - a), abs(a - idx_tag));
+            int dist_b = min(abs(idx_tag - b), abs(b - idx_tag));
+            return dist_a < dist_b; });
+        bool can_store = false;
+        for (auto region_index : region_indexs)
         {
-            if (i == idx_tag)
-                continue;
-            if (regions[i].free_blocks_size > regions[region_idx].free_blocks_size)
-                region_idx = i;
+            if (regions[region_index].space_count > info.size)
+            {
+                addrs = regions[region_index].use_space(info.size);
+                can_store = true;
+                break;
+            }
         }
-        addrs = regions[region_idx].use_space(info.size);
+        if (!can_store)
+            throw logic_error("no region can store obj " +
+                              to_string(info.id) + " of size " +
+                              to_string(info.size) + " in disk " +
+                              to_string(id));
     }
-    string s = to_string(id+1);//盘号（注意从1开始) + 对象各块存储位置
-    for(int i = 0; i < info.size; i++){
+    string s = to_string(id + 1); // 盘号（注意从1开始) + 对象各块存储位置
+    for (int i = 0; i < info.size; i++)
+    {
         int addr = addrs[i];
         blocks[addr].used = true;
         blocks[addr].obj_id = info.id;
         blocks[addr].part = i;
         replica->addr_part[i] = addr;
-        s += " " + to_string(addr+1);//空格 + 块存入地址（从1开始）
+        s += " " + to_string(addr + 1); // 空格 + 块存入地址（从1开始）
     }
     return s;
 }
@@ -157,26 +173,27 @@ void Disk::del_replica(Object &info)
     replicas[info.id] = nullptr;
     vector<int> addrs;
     addrs.reserve(info.size);
-    for(int i = 0;i<info.size;i++){
+    for (int i = 0; i < info.size; i++)
+    {
         addrs.push_back(replica->addr_part[i]);
         blocks[replica->addr_part[i]].used = false;
         blocks[replica->addr_part[i]].obj_id = -1;
         blocks[replica->addr_part[i]].part = -1;
     }
     regions[idx_region].free_space(addrs);
-    delete(replica);
+    delete (replica);
 }
 //!! 这里一定要填tag 从1开始的tag 而不是转换的索引
 int Disk::getRegionSpace(int tag)
 {
-    return regions[tag-1].free_blocks_size;
+    return regions[tag - 1].space_count;
 }
 int Disk::getAllSpace()
 {
     int free_blocks = 0;
     for (int i = 0; i < regions.size(); i++)
     {
-        free_blocks += regions[i].free_blocks_size;
+        free_blocks += regions[i].space_count;
     }
     return free_blocks;
 }
@@ -204,6 +221,6 @@ int Disk::get_regionIndix(int addr)
             return i;
         }
     }
-    assert(true);// should not reach here
+    assert(true); // should not reach here
     return -1;
 }
